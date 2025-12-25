@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  fleet-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: msp-fleet-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MASTER_PASSWORD=${MASTER_PASSWORD:-Smart@2026!}
+      - SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    volumes:
+      # Persist PBX configuration
+      - ./backend/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - fleet-network
+
+networks:
+  fleet-network:
+    driver: bridge
+
+volumes:
+  pbx-data:
+    driver: local
