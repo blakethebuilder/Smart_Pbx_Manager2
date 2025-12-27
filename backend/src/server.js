@@ -44,8 +44,13 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
-app.use(express.static(join(__dirname, '../../frontend/public')));
+// Serve static files - handle both development and production paths
+const frontendPath = process.env.NODE_ENV === 'production' 
+  ? join(__dirname, '../frontend/public')  // Docker production path
+  : join(__dirname, '../../frontend/public'); // Development path
+
+console.log(`📁 Serving static files from: ${frontendPath}`);
+app.use(express.static(frontendPath));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -54,6 +59,20 @@ app.use('/api/pbx', pbxRoutes);
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Catch-all handler: send back React app's index.html file for non-API routes
+app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
+    const frontendPath = process.env.NODE_ENV === 'production' 
+        ? join(__dirname, '../frontend/public')
+        : join(__dirname, '../../frontend/public');
+    
+    res.sendFile(join(frontendPath, 'index.html'));
 });
 
 // Socket.io connection handling
