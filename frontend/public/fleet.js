@@ -1,34 +1,50 @@
 // MSP Fleet Dashboard - Client-side Logic
 
-const socket = io();
+let socket = null;
 let pbxData = [];
 
 // Check authentication on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    const authCheck = await fetch('/api/auth/check', {
-        credentials: 'include' // Include session cookies
-    });
-    const auth = await authCheck.json();
+    console.log('🔍 Dashboard loading, checking authentication...');
+    
+    try {
+        const authCheck = await fetch('/api/auth/check', {
+            credentials: 'include' // Include session cookies
+        });
+        const auth = await authCheck.json();
+        
+        console.log('🔐 Auth check result:', auth);
 
-    if (!auth.authenticated) {
+        if (!auth.authenticated) {
+            console.log('❌ Not authenticated, redirecting to login');
+            window.location.href = '/';
+            return;
+        }
+
+        console.log('✅ Authenticated, initializing Socket.io...');
+        
+        // Only initialize Socket.io AFTER confirming authentication
+        socket = io();
+
+        // Connect Socket.io
+        socket.on('connect', () => {
+            console.log('✅ Socket.io connected');
+        });
+
+        socket.on('fleet-update', (data) => {
+            console.log('📊 Fleet update received:', data);
+            pbxData = data;
+            renderFleet(data);
+            updateLastUpdateTime();
+        });
+
+        // Setup form handler
+        document.getElementById('pbxForm').addEventListener('submit', savePBX);
+        
+    } catch (error) {
+        console.error('❌ Auth check failed:', error);
         window.location.href = '/';
-        return;
     }
-
-    // Connect Socket.io
-    socket.on('connect', () => {
-        console.log('✅ Socket.io connected');
-    });
-
-    socket.on('fleet-update', (data) => {
-        console.log('📊 Fleet update received:', data);
-        pbxData = data;
-        renderFleet(data);
-        updateLastUpdateTime();
-    });
-
-    // Setup form handler
-    document.getElementById('pbxForm').addEventListener('submit', savePBX);
 });
 
 /**

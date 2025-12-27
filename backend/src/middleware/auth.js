@@ -54,15 +54,20 @@ export function logout(req, res) {
  * Check auth status
  */
 export function checkAuth(req, res) {
-    console.log('🔍 Auth check:', {
+    const sessionInfo = {
         sessionId: req.sessionID,
         authenticated: req.session?.authenticated,
-        session: req.session
-    });
+        session: req.session,
+        cookies: req.headers.cookie
+    };
+    
+    console.log('🔍 Auth check request:', sessionInfo);
     
     if (req.session && req.session.authenticated) {
+        console.log('✅ Auth check: User is authenticated');
         res.json({ success: true, authenticated: true });
     } else {
+        console.log('❌ Auth check: User is NOT authenticated');
         res.json({ success: true, authenticated: false });
     }
 }
