@@ -21,11 +21,19 @@ export function isAuthenticated(req, res, next) {
  */
 export function login(req, res) {
     const { password } = req.body;
+    
+    console.log('🔐 Login attempt:', {
+        hasPassword: !!password,
+        sessionId: req.sessionID,
+        session: req.session
+    });
 
     if (password === MASTER_PASSWORD) {
         req.session.authenticated = true;
+        console.log('✅ Login successful, session:', req.session);
         res.json({ success: true, message: 'Login successful' });
     } else {
+        console.log('❌ Invalid password attempt');
         res.status(401).json({ success: false, error: 'Invalid password' });
     }
 }
@@ -46,6 +54,12 @@ export function logout(req, res) {
  * Check auth status
  */
 export function checkAuth(req, res) {
+    console.log('🔍 Auth check:', {
+        sessionId: req.sessionID,
+        authenticated: req.session?.authenticated,
+        session: req.session
+    });
+    
     if (req.session && req.session.authenticated) {
         res.json({ success: true, authenticated: true });
     } else {

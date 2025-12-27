@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -8,6 +9,7 @@ import { dirname, join } from 'path';
 import authRoutes from './routes/authRoutes.js';
 import pbxRoutes from './routes/pbxRoutes.js';
 import { initializePoller } from './services/backgroundPoller.js';
+import { getSessionConfig } from './middleware/sessionConfig.js';
 
 // Load environment variables
 dotenv.config();
@@ -29,16 +31,15 @@ const io = new Server(server, {
     }
 });
 
-// Session middleware
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'msp-fleet-dashboard-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+// Add CORS middleware for Express
+import cors from 'cors';
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || true, // Allow all origins in development
+    credentials: true // Allow cookies
 }));
+
+// Session middleware
+app.use(session(getSessionConfig()));
 
 // Body parsing middleware
 app.use(express.json());
@@ -59,6 +60,16 @@ app.use('/api/pbx', pbxRoutes);
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Debug endpoint for session info (remove in production)
+app.get('/debug/session', (req, res) => {
+    res.json({
+        sessionId: req.sessionID,
+        session: req.session,
+        authenticated: req.session?.authenticated || false,
+        cookies: req.headers.cookie
+    });
 });
 
 // Catch-all handler: send back React app's index.html file for non-API routes
