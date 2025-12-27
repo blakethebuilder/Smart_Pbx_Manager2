@@ -5,7 +5,9 @@ let pbxData = [];
 
 // Check authentication on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    const authCheck = await fetch('/api/auth/check');
+    const authCheck = await fetch('/api/auth/check', {
+        credentials: 'include' // Include session cookies
+    });
     const auth = await authCheck.json();
 
     if (!auth.authenticated) {
@@ -190,6 +192,7 @@ async function savePBX(e) {
         const response = await fetch(endpoint, {
             method,
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Include session cookies
             body: JSON.stringify({ name, url, appId, appSecret })
         });
 
@@ -227,7 +230,10 @@ function showFormError(message) {
  * Logout
  */
 async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include' // Include session cookies
+    });
     window.location.href = '/';
 }
 
