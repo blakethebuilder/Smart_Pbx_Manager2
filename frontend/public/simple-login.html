@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MSP Dashboard - Simple Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+        }
+        h1 {
+            text-align: center;
+            margin: 0 0 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+        }
+        input[type="password"]::placeholder {
+            color: #aaa;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.5);
+            color: #86efac;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .debug-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .note {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🛡️</div>
+        <h1>MSP Fleet Dashboard</h1>
+        <p class="subtitle">Simple Login Test</p>
+        
+        <div id="error" class="error"></div>
+        <div id="success" class="success"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="password">Master Password</label>
+                <input type="password" id="password" placeholder="Enter password" required autofocus>
+            </div>
+            
+            <button type="submit" id="loginBtn">Login</button>
+        </form>
+        
+        <div class="debug-info">
+            <strong>Debug Info:</strong><br>
+            <span id="debugInfo">Loading...</span>
+        </div>
+        
+        <p class="note">Default password: Smart@2026!</p>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+        const debugInfo = document.getElementById('debugInfo');
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+        }
+
+        function hideMessages() {
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+        }
+
+        function updateDebugInfo(info) {
+            debugInfo.innerHTML = info;
+        }
+
+        // Test connection on load
+        async function testConnection() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                updateDebugInfo(`✅ Server connected<br>Health: ${data.status}<br>Time: ${new Date(data.timestamp).toLocaleTimeString()}`);
+            } catch (error) {
+                updateDebugInfo(`❌ Server connection failed<br>Error: ${error.message}`);
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+            
+            const password = passwordInput.value;
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            
+            try {
+                updateDebugInfo('🔄 Attempting login...');
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // CRITICAL for session cookies
+                    body: JSON.stringify({ password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('Login successful! Checking authentication...');
+                    updateDebugInfo('✅ Login successful<br>🔄 Verifying session...');
+                    
+                    // Immediately test if we're authenticated
+                    setTimeout(async () => {
+                        try {
+                            const authResponse = await fetch('/api/auth/check', {
+                                credentials: 'include'
+                            });
+                            const authData = await authResponse.json();
+                            
+                            if (authData.authenticated) {
+                                showSuccess('Authentication verified! Redirecting to dashboard...');
+                                updateDebugInfo('✅ Session verified<br>🔄 Redirecting...');
+                                setTimeout(() => {
+                                    window.location.href = '/dashboard.html';
+                                }, 1500);
+                            } else {
+                                showError('Login succeeded but session not maintained. Check server logs.');
+                                updateDebugInfo('❌ Session lost after login<br>This indicates a session configuration issue');
+                            }
+                        } catch (error) {
+                            showError('Authentication check failed: ' + error.message);
+                            updateDebugInfo('❌ Auth check failed<br>' + error.message);
+                        }
+                    }, 1000);
+                } else {
+                    showError(data.error || 'Invalid password');
+                    updateDebugInfo('❌ Login failed<br>' + (data.error || 'Invalid password'));
+                }
+            } catch (error) {
+                showError('Connection error: ' + error.message);
+                updateDebugInfo('❌ Connection error<br>' + error.message);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+
+        // Test connection on page load
+        window.onload = testConnection;
+    </script>
+</body>
+</html>

@@ -38,6 +38,17 @@ app.use(cors({
     credentials: true // Allow cookies
 }));
 
+// Add request logging middleware
+app.use((req, res, next) => {
+    console.log(`📝 ${req.method} ${req.path}`, {
+        sessionId: req.sessionID,
+        authenticated: req.session?.authenticated,
+        cookies: req.headers.cookie ? 'present' : 'none',
+        userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
+    });
+    next();
+});
+
 // Session middleware
 app.use(session(getSessionConfig()));
 

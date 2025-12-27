@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MSP Dashboard - Connection Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 40px; 
+            background: #1a1a1a; 
+            color: white; 
+        }
+        .test-box { 
+            background: #333; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+        }
+        .success { background: #2d5a2d; }
+        .error { background: #5a2d2d; }
+        button { 
+            background: #4a90e2; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #357abd; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>MSP Dashboard - Connection Test</h1>
+    
+    <div class="test-box">
+        <h3>Server Status</h3>
+        <p>Testing connection to backend server...</p>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <button onclick="testSession()">Test Session Debug</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="clearCache()">Clear Browser Cache</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-box ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+        }
+
+        async function testHealth() {
+            try {
+                log('Testing /health endpoint...');
+                const response = await fetch('/health');
+                const data = await response.json();
+                log(`Health check: ${JSON.stringify(data)}`, 'success');
+            } catch (error) {
+                log(`Health check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSession() {
+            try {
+                log('Testing session debug endpoint...');
+                const response = await fetch('/debug/session', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                log(`Session info: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log(`Session test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            try {
+                log('Testing login with default password...');
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ password: 'Smart@2026!' })
+                });
+                const data = await response.json();
+                log(`Login result: ${JSON.stringify(data)}`, data.success ? 'success' : 'error');
+                
+                if (data.success) {
+                    // Test auth check immediately after login
+                    setTimeout(async () => {
+                        const authResponse = await fetch('/api/auth/check', {
+                            credentials: 'include'
+                        });
+                        const authData = await authResponse.json();
+                        log(`Auth check after login: ${JSON.stringify(authData)}`, authData.authenticated ? 'success' : 'error');
+                    }, 1000);
+                }
+            } catch (error) {
+                log(`Login test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearCache() {
+            log('Clearing browser cache and reloading...');
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        }
+
+        // Auto-run health check on load
+        window.onload = () => {
+            testHealth();
+            log('Page loaded. If you see Tailwind CDN errors, there may be a caching issue.');
+        };
+    </script>
+</body>
+</html>
