@@ -38,6 +38,17 @@ app.use(cors({
     credentials: true // Allow cookies
 }));
 
+// Add cache-busting headers for development/debugging
+app.use((req, res, next) => {
+    // Disable caching for all responses during debugging
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    });
+    next();
+});
+
 // Add request logging middleware
 app.use((req, res, next) => {
     console.log(`📝 ${req.method} ${req.path}`, {
@@ -70,7 +81,15 @@ app.use('/api/pbx', pbxRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        version: '2024-12-28-v3', // Version identifier
+        session: {
+            id: req.sessionID,
+            authenticated: req.session?.authenticated || false
+        }
+    });
 });
 
 // Debug endpoint for session info (remove in production)
@@ -83,17 +102,71 @@ app.get('/debug/session', (req, res) => {
     });
 });
 
+// Simple test endpoint
+app.get('/debug/test', (req, res) => {
+    res.send(`
+        <html>
+        <head><title>Debug Test</title></head>
+        <body style="font-family: Arial; padding: 20px; background: #222; color: white;">
+            <h1>🔧 Debug Test Page</h1>
+            <p><strong>Server Time:</strong> ${new Date().toISOString()}</p>
+            <p><strong>Session ID:</strong> ${req.sessionID}</p>
+            <p><strong>Authenticated:</strong> ${req.session?.authenticated || false}</p>
+            <p><strong>Cookies:</strong> ${req.headers.cookie || 'None'}</p>
+            <hr>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testAuth()">Test Auth Check</button>
+            <div id="result" style="margin-top: 20px; padding: 10px; background: #333;"></div>
+            <script>
+                async function testLogin() {
+                    const result = document.getElementById('result');
+                    try {
+                        const response = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ password: 'Smart@2026!' })
+                        });
+                        const data = await response.json();
+                        result.innerHTML = '<strong>Login Result:</strong><br>' + JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        result.innerHTML = '<strong>Login Error:</strong><br>' + error.message;
+                    }
+                }
+                
+                async function testAuth() {
+                    const result = document.getElementById('result');
+                    try {
+                        const response = await fetch('/api/auth/check', {
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        result.innerHTML = '<strong>Auth Check Result:</strong><br>' + JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        result.innerHTML = '<strong>Auth Check Error:</strong><br>' + error.message;
+                    }
+                }
+            </script>
+        </body>
+        </html>
+    `);
+});
+
 // Catch-all handler: send back React app's index.html file for non-API routes
 app.get('*', (req, res) => {
-    // Skip API routes
-    if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
+    // Skip API routes and specific files
+    if (req.path.startsWith('/api/') || 
+        req.path.startsWith('/socket.io/') ||
+        req.path.startsWith('/debug/') ||
+        req.path.includes('.')) {
+        return res.status(404).json({ error: 'Endpoint not found' });
     }
     
     const frontendPath = process.env.NODE_ENV === 'production' 
         ? join(__dirname, '../frontend/public')
         : join(__dirname, '../../frontend/public');
     
+    // Always serve index.html for non-API routes
     res.sendFile(join(frontendPath, 'index.html'));
 });
 
