@@ -7,17 +7,30 @@ import { dirname, join } from 'path';
 import fs from 'fs';
 import axios from 'axios';
 import cron from 'node-cron';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const DASHBOARD_PASSWORD = process.env.MASTER_PASSWORD || 'Smart@2026!';
 const server = createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { 
+    cors: { 
+        origin: process.env.CORS_ORIGIN || "*",
+        methods: ["GET", "POST"]
+    } 
+});
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || "*",
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -45,6 +58,23 @@ function savePBXData() {
         console.error('❌ Failed to save PBX data:', error.message);
     }
 }
+
+// Login endpoint
+app.post('/api/login', (req, res) => {
+    const { password } = req.body;
+    
+    if (!password) {
+        return res.status(400).json({ error: 'Password required' });
+    }
+    
+    if (password === DASHBOARD_PASSWORD) {
+        console.log('✅ Successful login attempt');
+        res.json({ success: true });
+    } else {
+        console.log('❌ Failed login attempt');
+        res.json({ success: false, error: 'Invalid password' });
+    }
+});
 
 // API Routes
 app.get('/api/pbx', (req, res) => {
@@ -191,25 +221,70 @@ app.post('/debug/test-api', async (req, res) => {
     try {
         console.log('🧪 Debug API test:', { url, appId, appSecret: '[HIDDEN]' });
         
-        const tokenUrl = `${url}/api/v2.0.0/token`;
-        console.log('📡 Testing URL:', tokenUrl);
+        // Clean and validate URL
+        let cleanUrl = url.trim();
+        if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+            cleanUrl = 'https://' + cleanUrl;
+        }
+        // Remove trailing slash
+        cleanUrl = cleanUrl.replace(/\/$/, '');
         
-        const response = await axios.post(tokenUrl, {
-            client_id: appId,
-            client_secret: appSecret
-        }, {
-            timeout: 10000,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // Check if this is a K2 VoIP PBX (YCM Cloud South Africa)
+        const isYCMCloud = cleanUrl.includes('ycmcloud.co.za');
         
-        console.log('✅ Raw API response:', response.data);
-        
-        res.json({
-            success: true,
-            status: response.status,
-            data: response.data,
-            hasToken: !!response.data?.access_token
-        });
+        if (isYCMCloud) {
+            // K2 VoIP PBX v2.0 uses OAuth authentication
+            const tokenUrl = `${cleanUrl}/api/v2.0.0/token`;
+            
+            console.log('📡 Testing K2 v2.0 OAuth URL:', tokenUrl);
+            
+            const response = await axios.post(tokenUrl, {
+                client_id: appId,
+                client_secret: appSecret
+            }, {
+                timeout: 10000,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'MSP-Dashboard/1.0'
+                }
+            });
+            
+            console.log('✅ K2 v2.0 OAuth response:', response.data);
+            
+            res.json({
+                success: true,
+                status: response.status,
+                data: response.data,
+                hasToken: !!response.data?.access_token,
+                apiType: 'K2 VoIP PBX v2.0 OAuth'
+            });
+        } else {
+            // Standard Yeastar OAuth flow
+            const isCloudPBX = cleanUrl.includes('yeastarcloud.com') || cleanUrl.includes('pbx.yeastar.com');
+            const tokenUrl = isCloudPBX 
+                ? `${cleanUrl}/openapi/v1.0.0/token`
+                : `${cleanUrl}/api/v2.0.0/token`;
+            
+            console.log('📡 Testing OAuth URL:', tokenUrl);
+            
+            const response = await axios.post(tokenUrl, {
+                client_id: appId,
+                client_secret: appSecret
+            }, {
+                timeout: 10000,
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            console.log('✅ OAuth API response:', response.data);
+            
+            res.json({
+                success: true,
+                status: response.status,
+                data: response.data,
+                hasToken: !!response.data?.access_token,
+                apiType: 'Standard Yeastar OAuth'
+            });
+        }
         
     } catch (error) {
         console.error('❌ Raw API test failed:', error.response?.data || error.message);
@@ -229,68 +304,122 @@ async function checkPBXHealth(pbx) {
         console.log(`🔍 Checking health for ${pbx.name} at ${pbx.url}`);
         console.log(`📋 Using credentials - App ID: ${pbx.appId}, Secret: ${pbx.appSecret ? '[PRESENT]' : '[MISSING]'}`);
         
-        const tokenUrl = `${pbx.url}/api/v2.0.0/token`;
-        console.log(`📡 Token URL: ${tokenUrl}`);
+        // Clean and validate URL
+        let cleanUrl = pbx.url.trim();
+        if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+            cleanUrl = 'https://' + cleanUrl;
+        }
+        // Remove trailing slash
+        cleanUrl = cleanUrl.replace(/\/$/, '');
         
-        const requestData = {
-            client_id: pbx.appId,
-            client_secret: pbx.appSecret
-        };
-        console.log(`📤 Request data:`, { ...requestData, client_secret: '[HIDDEN]' });
+        // Check if this is a K2 VoIP PBX (YCM Cloud South Africa) 
+        const isYCMCloud = cleanUrl.includes('ycmcloud.co.za');
         
-        // Try to get a token first
-        const tokenResponse = await axios.post(tokenUrl, requestData, {
-            timeout: 15000,
-            headers: { 
-                'Content-Type': 'application/json',
-                'User-Agent': 'MSP-Dashboard/1.0'
+        if (isYCMCloud) {
+            // K2 VoIP PBX v2.0 uses OAuth authentication like standard Yeastar
+            const tokenUrl = `${cleanUrl}/api/v2.0.0/token`;
+            console.log(`📡 K2 v2.0 Token URL: ${tokenUrl}`);
+            
+            const requestData = {
+                client_id: pbx.appId,
+                client_secret: pbx.appSecret
+            };
+            
+            // Get OAuth token
+            const tokenResponse = await axios.post(tokenUrl, requestData, {
+                timeout: 15000,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'MSP-Dashboard/1.0'
+                }
+            });
+
+            if (!tokenResponse.data?.access_token) {
+                throw new Error(`No access token in response. Got: ${JSON.stringify(tokenResponse.data)}`);
             }
-        });
 
-        console.log(`📡 Token response for ${pbx.name}:`, {
-            status: tokenResponse.status,
-            statusText: tokenResponse.statusText,
-            headers: tokenResponse.headers,
-            dataKeys: Object.keys(tokenResponse.data || {}),
-            hasToken: !!tokenResponse.data?.access_token,
-            fullResponse: tokenResponse.data
-        });
+            const token = tokenResponse.data.access_token;
+            console.log(`✅ K2 v2.0 token received for ${pbx.name}, length: ${token.length}`);
 
-        if (!tokenResponse.data) {
-            throw new Error('Empty response from token endpoint');
+            // Test with system info endpoint
+            const systemUrl = `${cleanUrl}/api/v2.0.0/system/info`;
+            console.log(`📡 K2 v2.0 System URL: ${systemUrl}`);
+            
+            const systemResponse = await axios.get(systemUrl, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'User-Agent': 'MSP-Dashboard/1.0'
+                },
+                timeout: 15000
+            });
+
+            console.log(`📊 K2 v2.0 System info received for ${pbx.name}:`, {
+                status: systemResponse.status,
+                dataKeys: Object.keys(systemResponse.data || {})
+            });
+
+            return {
+                status: 'healthy',
+                connected: true,
+                systemInfo: systemResponse.data,
+                lastCheck: new Date().toISOString(),
+                apiType: 'K2 VoIP PBX v2.0'
+            };
+        } else {
+            // Standard Yeastar Cloud OAuth flow
+            const isCloudPBX = cleanUrl.includes('yeastarcloud.com') || cleanUrl.includes('pbx.yeastar.com');
+            
+            let tokenUrl;
+            if (isCloudPBX) {
+                tokenUrl = `${cleanUrl}/openapi/v1.0.0/token`;
+            } else {
+                tokenUrl = `${cleanUrl}/api/v2.0.0/token`;
+            }
+            
+            console.log(`📡 OAuth Token URL: ${tokenUrl}`);
+            
+            const requestData = {
+                client_id: pbx.appId,
+                client_secret: pbx.appSecret
+            };
+            
+            // Try to get a token first
+            const tokenResponse = await axios.post(tokenUrl, requestData, {
+                timeout: 15000,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'MSP-Dashboard/1.0'
+                }
+            });
+
+            if (!tokenResponse.data?.access_token) {
+                throw new Error(`No access token in response. Got: ${JSON.stringify(tokenResponse.data)}`);
+            }
+
+            const token = tokenResponse.data.access_token;
+            console.log(`✅ OAuth token received for ${pbx.name}, length: ${token.length}`);
+
+            // Get basic system info
+            const systemUrl = isCloudPBX 
+                ? `${cleanUrl}/openapi/v1.0.0/system/info`
+                : `${cleanUrl}/api/v2.0.0/system/info`;
+            
+            const systemResponse = await axios.get(systemUrl, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'User-Agent': 'MSP-Dashboard/1.0'
+                },
+                timeout: 15000
+            });
+
+            return {
+                status: 'healthy',
+                connected: true,
+                systemInfo: systemResponse.data,
+                lastCheck: new Date().toISOString(),
+                apiType: 'Standard Yeastar'
+            };
         }
-
-        if (!tokenResponse.data.access_token) {
-            console.log(`❌ No access token in response:`, tokenResponse.data);
-            throw new Error(`No access token in response. Got: ${JSON.stringify(tokenResponse.data)}`);
-        }
-
-        const token = tokenResponse.data.access_token;
-        console.log(`✅ Token received for ${pbx.name}, length: ${token.length}`);
-
-        // Get basic system info
-        const systemUrl = `${pbx.url}/api/v2.0.0/system/info`;
-        console.log(`📡 System info URL: ${systemUrl}`);
-        
-        const systemResponse = await axios.get(systemUrl, {
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'User-Agent': 'MSP-Dashboard/1.0'
-            },
-            timeout: 15000
-        });
-
-        console.log(`📊 System info received for ${pbx.name}:`, {
-            status: systemResponse.status,
-            dataKeys: Object.keys(systemResponse.data || {})
-        });
-
-        return {
-            status: 'healthy',
-            connected: true,
-            systemInfo: systemResponse.data,
-            lastCheck: new Date().toISOString()
-        };
 
     } catch (error) {
         console.error(`❌ Health check failed for ${pbx.name}:`, {
@@ -319,20 +448,20 @@ async function checkPBXHealth(pbx) {
             });
             
             if (status === 400) {
-                errorMessage = `Bad Request (400): ${data?.message || data?.error || 'Invalid request format'}`;
+                errorMessage = `Bad Request (400): ${data?.message || data?.errmsg || 'Invalid request format'}`;
             } else if (status === 401) {
-                errorMessage = `Unauthorized (401): ${data?.message || data?.error || 'Invalid API credentials'}`;
+                errorMessage = `Unauthorized (401): ${data?.message || data?.errmsg || 'Invalid API credentials'}`;
             } else if (status === 403) {
-                errorMessage = `Forbidden (403): ${data?.message || data?.error || 'Check IP allowlist'}`;
+                errorMessage = `Forbidden (403): ${data?.message || data?.errmsg || 'Check IP allowlist'}`;
             } else if (status === 404) {
-                errorMessage = `Not Found (404): ${data?.message || data?.error || 'API endpoint not found - Check PBX URL'}`;
+                errorMessage = `Not Found (404): ${data?.message || data?.errmsg || 'API endpoint not found'}`;
             } else {
-                errorMessage = `API error ${status}: ${data?.message || data?.error || JSON.stringify(data) || 'Unknown error'}`;
+                errorMessage = `API error ${status}: ${data?.message || data?.errmsg || JSON.stringify(data) || 'Unknown error'}`;
             }
         } else if (error.code === 'ECONNREFUSED') {
             errorMessage = 'Connection refused - PBX unreachable';
         } else if (error.code === 'ENOTFOUND') {
-            errorMessage = 'PBX hostname not found - Check URL';
+            errorMessage = 'PBX hostname not found - Check URL format. For Yeastar Cloud, use: https://[tenant].pbx.yeastar.com or https://[tenant].yeastarcloud.com';
         } else if (error.code === 'ETIMEDOUT') {
             errorMessage = 'Connection timeout - PBX not responding';
         } else if (error.code === 'ECONNRESET') {
