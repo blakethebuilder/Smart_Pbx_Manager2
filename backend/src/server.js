@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -66,6 +67,7 @@ app.use(session(getSessionConfig()));
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Add cookie parser for token-based auth
 
 // Serve static files - handle both development and production paths
 const frontendPath = process.env.NODE_ENV === 'production' 

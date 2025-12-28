@@ -1,5 +1,5 @@
 import express from 'express';
-import { isAuthenticated } from '../middleware/auth.js';
+import { requireAuth } from '../auth/simple.js';
 import { getAllPBXs, getPBXById, addPBX, updatePBX, deletePBX } from '../services/pbxStorage.js';
 import { clearToken } from '../services/tokenCache.js';
 import { triggerImmediatePoll } from '../services/backgroundPoller.js';
@@ -10,7 +10,7 @@ const router = express.Router();
  * GET /api/pbx
  * Get all PBXs (without secrets)
  */
-router.get('/', isAuthenticated, (req, res) => {
+router.get('/', requireAuth, (req, res) => {
     try {
         const pbxs = getAllPBXs();
 
@@ -33,7 +33,7 @@ router.get('/', isAuthenticated, (req, res) => {
  * POST /api/pbx
  * Add new PBX
  */
-router.post('/', isAuthenticated, (req, res) => {
+router.post('/', requireAuth, (req, res) => {
     try {
         const { name, url, appId, appSecret } = req.body;
 
@@ -67,7 +67,7 @@ router.post('/', isAuthenticated, (req, res) => {
  * PUT /api/pbx/:id
  * Update PBX
  */
-router.put('/:id', isAuthenticated, (req, res) => {
+router.put('/:id', requireAuth, (req, res) => {
     try {
         const { name, url, appId, appSecret } = req.body;
 
@@ -104,7 +104,7 @@ router.put('/:id', isAuthenticated, (req, res) => {
  * DELETE /api/pbx/:id
  * Delete PBX
  */
-router.delete('/:id', isAuthenticated, (req, res) => {
+router.delete('/:id', requireAuth, (req, res) => {
     try {
         deletePBX(req.params.id);
 
