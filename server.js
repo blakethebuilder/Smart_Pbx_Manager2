@@ -48,6 +48,132 @@ if (fs.existsSync(dataFile)) {
         console.log('📊 Starting with empty PBX list');
         pbxInstances = [];
     }
+} else {
+    // Add dummy data for UI demonstration
+    pbxInstances = [
+        {
+            id: 'demo-1',
+            name: 'Main Office PBX',
+            url: 'https://main.pbx.yeastar.com',
+            appId: 'demo-client-id-1',
+            appSecret: 'demo-secret-1',
+            status: 'healthy',
+            lastCheck: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            health: {
+                status: 'healthy',
+                connected: true,
+                systemInfo: {
+                    extensions: 45,
+                    activeCalls: 7,
+                    uptime: '15 days',
+                    version: 'K2 v2.0.1'
+                },
+                lastCheck: new Date().toISOString(),
+                apiType: 'K2 VoIP PBX v2.0'
+            }
+        },
+        {
+            id: 'demo-2',
+            name: 'Branch Office PBX',
+            url: 'https://branch.pbx.yeastar.com',
+            appId: 'demo-client-id-2',
+            appSecret: 'demo-secret-2',
+            status: 'healthy',
+            lastCheck: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            health: {
+                status: 'healthy',
+                connected: true,
+                systemInfo: {
+                    extensions: 28,
+                    activeCalls: 4,
+                    uptime: '8 days',
+                    version: 'K2 v2.0.0'
+                },
+                lastCheck: new Date().toISOString(),
+                apiType: 'K2 VoIP PBX v2.0'
+            }
+        },
+        {
+            id: 'demo-3',
+            name: 'Client ABC PBX',
+            url: 'https://clientabc.pbx.ycmcloud.co.za',
+            appId: 'demo-client-id-3',
+            appSecret: 'demo-secret-3',
+            status: 'error',
+            lastCheck: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            health: {
+                status: 'error',
+                connected: false,
+                error: 'Connection timeout - PBX not responding',
+                lastCheck: new Date().toISOString()
+            }
+        },
+        {
+            id: 'demo-4',
+            name: 'Remote Office PBX',
+            url: 'https://remote.pbx.yeastar.com',
+            appId: 'demo-client-id-4',
+            appSecret: 'demo-secret-4',
+            status: 'healthy',
+            lastCheck: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            health: {
+                status: 'healthy',
+                connected: true,
+                systemInfo: {
+                    extensions: 12,
+                    activeCalls: 2,
+                    uptime: '3 days',
+                    version: 'K2 v1.9.8'
+                },
+                lastCheck: new Date().toISOString(),
+                apiType: 'Standard Yeastar'
+            }
+        },
+        {
+            id: 'demo-5',
+            name: 'Client XYZ PBX',
+            url: 'https://clientxyz.pbx.yeastar.com',
+            appId: 'demo-client-id-5',
+            appSecret: 'demo-secret-5',
+            status: 'unknown',
+            lastCheck: null,
+            createdAt: new Date().toISOString(),
+            health: {
+                status: 'unknown',
+                connected: false,
+                lastCheck: null
+            }
+        },
+        {
+            id: 'demo-6',
+            name: 'Call Center PBX',
+            url: 'https://callcenter.pbx.yeastar.com',
+            appId: 'demo-client-id-6',
+            appSecret: 'demo-secret-6',
+            status: 'healthy',
+            lastCheck: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            health: {
+                status: 'healthy',
+                connected: true,
+                systemInfo: {
+                    extensions: 85,
+                    activeCalls: 23,
+                    uptime: '45 days',
+                    version: 'K2 v2.0.1'
+                },
+                lastCheck: new Date().toISOString(),
+                apiType: 'K2 VoIP PBX v2.0'
+            }
+        }
+    ];
+    
+    console.log('📊 Created demo PBX instances for UI testing');
+    savePBXData();
 }
 
 // Save PBX data to file
@@ -535,6 +661,34 @@ io.on('connection', (socket) => {
         console.log(`🔌 Client disconnected: ${socket.id}`);
     });
 });
+
+// Simulate dynamic call activity for demo
+function updateDemoCallActivity() {
+    pbxInstances.forEach(pbx => {
+        if (pbx.status === 'healthy' && pbx.health?.systemInfo) {
+            const maxCalls = Math.floor(pbx.health.systemInfo.extensions * 0.3); // Max 30% of extensions active
+            const currentCalls = Math.floor(Math.random() * (maxCalls + 1));
+            pbx.health.systemInfo.activeCalls = currentCalls;
+            pbx.lastCheck = new Date().toISOString();
+            pbx.health.lastCheck = new Date().toISOString();
+        }
+    });
+    
+    // Broadcast update to all connected clients
+    io.emit('pbx-update', pbxInstances.map(pbx => ({
+        id: pbx.id,
+        name: pbx.name,
+        url: pbx.url,
+        status: pbx.status,
+        lastCheck: pbx.lastCheck,
+        health: pbx.health
+    })));
+    
+    console.log('📞 Updated demo call activity');
+}
+
+// Update demo call activity every 30 seconds
+setInterval(updateDemoCallActivity, 30000);
 
 // Check PBX health every 2 minutes
 cron.schedule('*/2 * * * *', checkAllPBX);
