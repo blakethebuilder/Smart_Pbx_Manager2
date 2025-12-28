@@ -116,10 +116,50 @@ app.delete('/api/pbx/:id', (req, res) => {
         return res.status(404).json({ error: 'PBX not found' });
     }
 
+    const deletedPBX = pbxInstances[index];
     pbxInstances.splice(index, 1);
     savePBXData();
     
+    console.log('🗑️ PBX deleted:', deletedPBX.name);
+    
     res.json({ success: true });
+});
+
+// Test individual PBX
+app.post('/api/pbx/:id/test', async (req, res) => {
+    const { id } = req.params;
+    const pbx = pbxInstances.find(p => p.id === id);
+    
+    if (!pbx) {
+        return res.status(404).json({ error: 'PBX not found' });
+    }
+
+    console.log(`🧪 Manual test requested for ${pbx.name}`);
+    
+    try {
+        const health = await checkPBXHealth(pbx);
+        
+        // Update the PBX with new health data
+        pbx.status = health.status;
+        pbx.lastCheck = health.lastCheck;
+        pbx.health = health;
+        savePBXData();
+        
+        // Broadcast update
+        io.emit('pbx-update', pbxInstances.map(pbx => ({
+            id: pbx.id,
+            name: pbx.name,
+            url: pbx.url,
+            status: pbx.status,
+            lastCheck: pbx.lastCheck,
+            health: pbx.health
+        })));
+        
+        res.json({ success: true, health });
+    } catch (error) {
+        console.error(`❌ Manual test failed for ${pbx.name}:`, error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Health check endpoint
@@ -143,26 +183,37 @@ app.get('/test', (req, res) => {
 // Simple PBX health check function
 async function checkPBXHealth(pbx) {
     try {
+        console.log(`🔍 Checking health for ${pbx.name} at ${pbx.url}`);
+        
         // Try to get a token first
         const tokenResponse = await axios.post(`${pbx.url}/api/v2.0.0/token`, {
             client_id: pbx.appId,
             client_secret: pbx.appSecret
         }, {
-            timeout: 10000,
+            timeout: 15000,
             headers: { 'Content-Type': 'application/json' }
         });
 
+        console.log(`📡 Token response for ${pbx.name}:`, {
+            status: tokenResponse.status,
+            hasData: !!tokenResponse.data,
+            hasToken: !!tokenResponse.data?.access_token
+        });
+
         if (!tokenResponse.data || !tokenResponse.data.access_token) {
-            throw new Error('No access token received');
+            throw new Error('No access token received - Check API credentials');
         }
 
         const token = tokenResponse.data.access_token;
+        console.log(`✅ Token received for ${pbx.name}`);
 
         // Get basic system info
         const systemResponse = await axios.get(`${pbx.url}/api/v2.0.0/system/info`, {
             headers: { 'Authorization': `Bearer ${token}` },
-            timeout: 10000
+            timeout: 15000
         });
+
+        console.log(`📊 System info received for ${pbx.name}`);
 
         return {
             status: 'healthy',
@@ -172,10 +223,38 @@ async function checkPBXHealth(pbx) {
         };
 
     } catch (error) {
+        console.error(`❌ Health check failed for ${pbx.name}:`, error.message);
+        
+        let errorMessage = error.message;
+        
+        // Provide more specific error messages
+        if (error.response) {
+            const status = error.response.status;
+            const data = error.response.data;
+            
+            console.log(`📡 Error response for ${pbx.name}:`, { status, data });
+            
+            if (status === 401) {
+                errorMessage = 'Invalid API credentials (401 Unauthorized)';
+            } else if (status === 403) {
+                errorMessage = 'API access forbidden (403) - Check IP allowlist';
+            } else if (status === 404) {
+                errorMessage = 'API endpoint not found (404) - Check PBX URL';
+            } else {
+                errorMessage = `API error ${status}: ${data?.message || data?.error || 'Unknown error'}`;
+            }
+        } else if (error.code === 'ECONNREFUSED') {
+            errorMessage = 'Connection refused - PBX unreachable';
+        } else if (error.code === 'ENOTFOUND') {
+            errorMessage = 'PBX hostname not found - Check URL';
+        } else if (error.code === 'ETIMEDOUT') {
+            errorMessage = 'Connection timeout - PBX not responding';
+        }
+
         return {
             status: 'error',
             connected: false,
-            error: error.message,
+            error: errorMessage,
             lastCheck: new Date().toISOString()
         };
     }

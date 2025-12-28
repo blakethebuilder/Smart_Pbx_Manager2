@@ -349,6 +349,9 @@
                         <button class="btn btn-small" onclick="window.open('${pbx.url}', '_blank')">
                             Open PBX
                         </button>
+                        <button class="btn btn-small" onclick="testPBX('${pbx.id}')" style="background: #6b7280;">
+                            Test Now
+                        </button>
                         <button class="btn btn-small btn-danger" onclick="deletePBX('${pbx.id}')">
                             Delete
                         </button>
@@ -436,6 +439,29 @@
                 submitBtn.disabled = false;
             }
         });
+
+        // Test individual PBX
+        async function testPBX(id) {
+            try {
+                console.log(`🧪 Testing PBX ${id}...`);
+                
+                const response = await fetch(`/api/pbx/${id}/test`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                console.log('🧪 PBX Test Result:', result);
+                
+                if (result.success) {
+                    alert(`✅ PBX Test Successful!\nStatus: ${result.health.status}\nMessage: ${result.health.error || 'Connected successfully'}`);
+                } else {
+                    alert(`❌ PBX Test Failed!\nError: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('❌ PBX Test Error:', error);
+                alert('PBX Test Error: ' + error.message);
+            }
+        }
 
         // Delete PBX
         async function deletePBX(id) {
