@@ -8,6 +8,7 @@ import { dirname, join } from 'path';
 import authRoutes from './routes/authRoutes.js';
 import pbxRoutes from './routes/pbxRoutes.js';
 import { initializePoller } from './services/backgroundPoller.js';
+import { requireAuth } from './auth/simple.js';
 
 // Load environment variables
 dotenv.config();
@@ -42,12 +43,32 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files
+// Serve static files with authentication check
 const frontendPath = process.env.NODE_ENV === 'production' 
   ? join(__dirname, '../frontend/public')
   : join(__dirname, '../../frontend/public');
 
 console.log(`📁 Serving static files from: ${frontendPath}`);
+
+// Serve login page without auth
+app.get('/', (req, res) => {
+    res.sendFile(join(frontendPath, 'clean-login.html'));
+});
+
+app.get('/clean-login.html', (req, res) => {
+    res.sendFile(join(frontendPath, 'clean-login.html'));
+});
+
+// Protect dashboard and other pages
+app.get('/dashboard.html', requireAuth, (req, res) => {
+    res.sendFile(join(frontendPath, 'clean-dashboard.html'));
+});
+
+app.get('/clean-dashboard.html', requireAuth, (req, res) => {
+    res.sendFile(join(frontendPath, 'clean-dashboard.html'));
+});
+
+// Serve other static files normally
 app.use(express.static(frontendPath));
 
 // API Routes
@@ -106,12 +127,14 @@ app.get('/test-auth', (req, res) => {
     `);
 });
 
-// Catch-all for SPA routing
+// Catch-all for SPA routing - redirect to login if not authenticated
 app.get('*', (req, res) => {
     if (req.path.startsWith('/api/') || req.path.includes('.')) {
         return res.status(404).json({ error: 'Not found' });
     }
-    res.sendFile(join(frontendPath, 'index.html'));
+    
+    // For any other route, redirect to login
+    res.redirect('/clean-login.html');
 });
 
 // Socket.io connection handling
