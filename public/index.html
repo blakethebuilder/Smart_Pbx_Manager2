@@ -250,9 +250,14 @@
                 <div class="status-dot"></div>
                 <span id="lastUpdate">Last update: Never</span>
             </div>
-            <button class="btn" onclick="openAddModal()">
-                + Add PBX Instance
-            </button>
+            <div>
+                <button class="btn" onclick="testAPI()" style="background: #6b7280; margin-right: 10px;">
+                    Test API
+                </button>
+                <button class="btn" onclick="openAddModal()">
+                    + Add PBX Instance
+                </button>
+            </div>
         </div>
 
         <div id="pbxGrid" class="grid"></div>
@@ -373,12 +378,19 @@
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Adding...';
+            submitBtn.disabled = true;
+            
             const formData = {
-                name: document.getElementById('pbxName').value,
-                url: document.getElementById('pbxUrl').value,
-                appId: document.getElementById('appId').value,
-                appSecret: document.getElementById('appSecret').value
+                name: document.getElementById('pbxName').value.trim(),
+                url: document.getElementById('pbxUrl').value.trim(),
+                appId: document.getElementById('appId').value.trim(),
+                appSecret: document.getElementById('appSecret').value.trim()
             };
+
+            console.log('📝 Submitting PBX data:', { ...formData, appSecret: '[HIDDEN]' });
 
             try {
                 const response = await fetch('/api/pbx', {
@@ -387,16 +399,41 @@
                     body: JSON.stringify(formData)
                 });
 
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Server error:', errorText);
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+
                 const result = await response.json();
+                console.log('✅ Server response:', result);
 
                 if (result.success) {
                     closeModal();
                     console.log('✅ PBX added successfully');
+                    
+                    // Show success message
+                    const successMsg = document.createElement('div');
+                    successMsg.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; z-index: 9999;
+                        background: #10b981; color: white; padding: 12px 20px;
+                        border-radius: 8px; font-weight: 500;
+                    `;
+                    successMsg.textContent = `✅ ${formData.name} added successfully!`;
+                    document.body.appendChild(successMsg);
+                    
+                    setTimeout(() => successMsg.remove(), 3000);
                 } else {
-                    alert('Error: ' + result.error);
+                    throw new Error(result.error || 'Unknown error');
                 }
             } catch (error) {
-                alert('Network error: ' + error.message);
+                console.error('❌ Add PBX error:', error);
+                alert('Error adding PBX: ' + error.message);
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             }
         });
 
@@ -418,6 +455,22 @@
                 }
             } catch (error) {
                 alert('Network error: ' + error.message);
+            }
+        }
+
+        // Test API function
+        async function testAPI() {
+            try {
+                console.log('🧪 Testing API...');
+                
+                const response = await fetch('/test');
+                const data = await response.json();
+                
+                console.log('✅ API Test Result:', data);
+                alert(`API Test: ${data.message}\nPBX Count: ${data.pbxCount}\nTime: ${new Date(data.timestamp).toLocaleString()}`);
+            } catch (error) {
+                console.error('❌ API Test Failed:', error);
+                alert('API Test Failed: ' + error.message);
             }
         }
 

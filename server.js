@@ -58,9 +58,12 @@ app.get('/api/pbx', (req, res) => {
 });
 
 app.post('/api/pbx', (req, res) => {
+    console.log('📝 Add PBX request received:', req.body);
+    
     const { name, url, appId, appSecret } = req.body;
     
     if (!name || !url || !appId || !appSecret) {
+        console.log('❌ Missing required fields:', { name: !!name, url: !!url, appId: !!appId, appSecret: !!appSecret });
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -77,6 +80,30 @@ app.post('/api/pbx', (req, res) => {
 
     pbxInstances.push(newPBX);
     savePBXData();
+    
+    console.log('✅ PBX added successfully:', newPBX.name);
+    
+    // Immediately check the new PBX
+    setTimeout(() => {
+        checkPBXHealth(newPBX).then(health => {
+            newPBX.status = health.status;
+            newPBX.lastCheck = health.lastCheck;
+            newPBX.health = health;
+            savePBXData();
+            
+            // Broadcast update
+            io.emit('pbx-update', pbxInstances.map(pbx => ({
+                id: pbx.id,
+                name: pbx.name,
+                url: pbx.url,
+                status: pbx.status,
+                lastCheck: pbx.lastCheck,
+                health: pbx.health
+            })));
+            
+            console.log(`🔍 Initial health check for ${newPBX.name}: ${health.status}`);
+        });
+    }, 2000);
     
     res.json({ success: true, pbx: newPBX });
 });
@@ -101,6 +128,15 @@ app.get('/health', (req, res) => {
         status: 'ok', 
         timestamp: new Date().toISOString(),
         pbxCount: pbxInstances.length
+    });
+});
+
+// Test endpoint
+app.get('/test', (req, res) => {
+    res.json({
+        message: 'API is working!',
+        pbxCount: pbxInstances.length,
+        timestamp: new Date().toISOString()
     });
 });
 
