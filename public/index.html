@@ -254,6 +254,9 @@
                 <button class="btn" onclick="testAPI()" style="background: #6b7280; margin-right: 10px;">
                     Test API
                 </button>
+                <button class="btn" onclick="debugAPI()" style="background: #ef4444; margin-right: 10px;">
+                    Debug API
+                </button>
                 <button class="btn" onclick="openAddModal()">
                     + Add PBX Instance
                 </button>
@@ -481,6 +484,41 @@
                 }
             } catch (error) {
                 alert('Network error: ' + error.message);
+            }
+        }
+
+        // Debug API function
+        async function debugAPI() {
+            const url = prompt('Enter PBX URL:', 'https://smarthq.pbx.yeastarcloud.com');
+            if (!url) return;
+            
+            const appId = prompt('Enter App ID:', '2wYCWagxOYquhPiCjqJMQzSATRW');
+            if (!appId) return;
+            
+            const appSecret = prompt('Enter App Secret:');
+            if (!appSecret) return;
+            
+            try {
+                console.log('🧪 Debug API test...');
+                
+                const response = await fetch('/debug/test-api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, appId, appSecret })
+                });
+                
+                const data = await response.json();
+                
+                console.log('🧪 Debug API Result:', data);
+                
+                if (data.success) {
+                    alert(`✅ Raw API Test Success!\nStatus: ${data.status}\nHas Token: ${data.hasToken}\nResponse: ${JSON.stringify(data.data, null, 2)}`);
+                } else {
+                    alert(`❌ Raw API Test Failed!\nError: ${data.error}\nStatus: ${data.status}\nResponse: ${JSON.stringify(data.data, null, 2)}`);
+                }
+            } catch (error) {
+                console.error('❌ Debug API Error:', error);
+                alert('Debug API Error: ' + error.message);
             }
         }
 

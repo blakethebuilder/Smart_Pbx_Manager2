@@ -180,40 +180,110 @@ app.get('/test', (req, res) => {
     });
 });
 
+// Debug endpoint to test raw API call
+app.post('/debug/test-api', async (req, res) => {
+    const { url, appId, appSecret } = req.body;
+    
+    if (!url || !appId || !appSecret) {
+        return res.status(400).json({ error: 'Missing url, appId, or appSecret' });
+    }
+    
+    try {
+        console.log('🧪 Debug API test:', { url, appId, appSecret: '[HIDDEN]' });
+        
+        const tokenUrl = `${url}/api/v2.0.0/token`;
+        console.log('📡 Testing URL:', tokenUrl);
+        
+        const response = await axios.post(tokenUrl, {
+            client_id: appId,
+            client_secret: appSecret
+        }, {
+            timeout: 10000,
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        console.log('✅ Raw API response:', response.data);
+        
+        res.json({
+            success: true,
+            status: response.status,
+            data: response.data,
+            hasToken: !!response.data?.access_token
+        });
+        
+    } catch (error) {
+        console.error('❌ Raw API test failed:', error.response?.data || error.message);
+        
+        res.json({
+            success: false,
+            error: error.message,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+    }
+});
+
 // Simple PBX health check function
 async function checkPBXHealth(pbx) {
     try {
         console.log(`🔍 Checking health for ${pbx.name} at ${pbx.url}`);
+        console.log(`📋 Using credentials - App ID: ${pbx.appId}, Secret: ${pbx.appSecret ? '[PRESENT]' : '[MISSING]'}`);
         
-        // Try to get a token first
-        const tokenResponse = await axios.post(`${pbx.url}/api/v2.0.0/token`, {
+        const tokenUrl = `${pbx.url}/api/v2.0.0/token`;
+        console.log(`📡 Token URL: ${tokenUrl}`);
+        
+        const requestData = {
             client_id: pbx.appId,
             client_secret: pbx.appSecret
-        }, {
+        };
+        console.log(`📤 Request data:`, { ...requestData, client_secret: '[HIDDEN]' });
+        
+        // Try to get a token first
+        const tokenResponse = await axios.post(tokenUrl, requestData, {
             timeout: 15000,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+                'Content-Type': 'application/json',
+                'User-Agent': 'MSP-Dashboard/1.0'
+            }
         });
 
         console.log(`📡 Token response for ${pbx.name}:`, {
             status: tokenResponse.status,
-            hasData: !!tokenResponse.data,
-            hasToken: !!tokenResponse.data?.access_token
+            statusText: tokenResponse.statusText,
+            headers: tokenResponse.headers,
+            dataKeys: Object.keys(tokenResponse.data || {}),
+            hasToken: !!tokenResponse.data?.access_token,
+            fullResponse: tokenResponse.data
         });
 
-        if (!tokenResponse.data || !tokenResponse.data.access_token) {
-            throw new Error('No access token received - Check API credentials');
+        if (!tokenResponse.data) {
+            throw new Error('Empty response from token endpoint');
+        }
+
+        if (!tokenResponse.data.access_token) {
+            console.log(`❌ No access token in response:`, tokenResponse.data);
+            throw new Error(`No access token in response. Got: ${JSON.stringify(tokenResponse.data)}`);
         }
 
         const token = tokenResponse.data.access_token;
-        console.log(`✅ Token received for ${pbx.name}`);
+        console.log(`✅ Token received for ${pbx.name}, length: ${token.length}`);
 
         // Get basic system info
-        const systemResponse = await axios.get(`${pbx.url}/api/v2.0.0/system/info`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+        const systemUrl = `${pbx.url}/api/v2.0.0/system/info`;
+        console.log(`📡 System info URL: ${systemUrl}`);
+        
+        const systemResponse = await axios.get(systemUrl, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'User-Agent': 'MSP-Dashboard/1.0'
+            },
             timeout: 15000
         });
 
-        console.log(`📊 System info received for ${pbx.name}`);
+        console.log(`📊 System info received for ${pbx.name}:`, {
+            status: systemResponse.status,
+            dataKeys: Object.keys(systemResponse.data || {})
+        });
 
         return {
             status: 'healthy',
@@ -223,7 +293,16 @@ async function checkPBXHealth(pbx) {
         };
 
     } catch (error) {
-        console.error(`❌ Health check failed for ${pbx.name}:`, error.message);
+        console.error(`❌ Health check failed for ${pbx.name}:`, {
+            message: error.message,
+            code: error.code,
+            response: error.response ? {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data,
+                headers: error.response.headers
+            } : 'No response object'
+        });
         
         let errorMessage = error.message;
         
@@ -232,16 +311,23 @@ async function checkPBXHealth(pbx) {
             const status = error.response.status;
             const data = error.response.data;
             
-            console.log(`📡 Error response for ${pbx.name}:`, { status, data });
+            console.log(`📡 Detailed error response for ${pbx.name}:`, { 
+                status, 
+                data,
+                url: error.config?.url,
+                method: error.config?.method
+            });
             
-            if (status === 401) {
-                errorMessage = 'Invalid API credentials (401 Unauthorized)';
+            if (status === 400) {
+                errorMessage = `Bad Request (400): ${data?.message || data?.error || 'Invalid request format'}`;
+            } else if (status === 401) {
+                errorMessage = `Unauthorized (401): ${data?.message || data?.error || 'Invalid API credentials'}`;
             } else if (status === 403) {
-                errorMessage = 'API access forbidden (403) - Check IP allowlist';
+                errorMessage = `Forbidden (403): ${data?.message || data?.error || 'Check IP allowlist'}`;
             } else if (status === 404) {
-                errorMessage = 'API endpoint not found (404) - Check PBX URL';
+                errorMessage = `Not Found (404): ${data?.message || data?.error || 'API endpoint not found - Check PBX URL'}`;
             } else {
-                errorMessage = `API error ${status}: ${data?.message || data?.error || 'Unknown error'}`;
+                errorMessage = `API error ${status}: ${data?.message || data?.error || JSON.stringify(data) || 'Unknown error'}`;
             }
         } else if (error.code === 'ECONNREFUSED') {
             errorMessage = 'Connection refused - PBX unreachable';
@@ -249,6 +335,8 @@ async function checkPBXHealth(pbx) {
             errorMessage = 'PBX hostname not found - Check URL';
         } else if (error.code === 'ETIMEDOUT') {
             errorMessage = 'Connection timeout - PBX not responding';
+        } else if (error.code === 'ECONNRESET') {
+            errorMessage = 'Connection reset - Network issue';
         }
 
         return {
