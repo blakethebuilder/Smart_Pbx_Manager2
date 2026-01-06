@@ -4,438 +4,663 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MSP PBX Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        .card-hover {
+            transition: all 0.3s ease;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
+        .card-hover:hover {
+            transform: translateY(-2px);
         }
-
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .login-box {
-            background: rgba(255,255,255,0.15);
-            border-radius: 16px;
-            padding: 40px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .login-box h2 {
-            margin-bottom: 30px;
-            font-size: 2rem;
-        }
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .login-input {
-            padding: 15px;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            font-size: 16px;
-            text-align: center;
-        }
-
-        .login-input::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-
-        .login-btn {
-            padding: 15px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .login-btn:hover {
-            background: #2563eb;
-        }
-
-        .login-error {
-            color: #ef4444;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .main-app {
-            display: none;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
-
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
+        
         .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #4ade80;
             animation: pulse 2s infinite;
         }
-
+        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
 
-        .btn {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.2s;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            color: #1f2937;
         }
 
-        .btn:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
+        /* Modal animations */
+        .modal-enter {
+            animation: modalEnter 0.3s ease-out;
+        }
+        
+        .modal-exit {
+            animation: modalExit 0.3s ease-in;
+        }
+        
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes modalExit {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.95);
+            }
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+        /* Card expand animations */
+        .card-expand {
+            animation: cardExpand 0.3s ease-out;
+        }
+        
+        @keyframes cardExpand {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.02);
+            }
         }
 
-        .card {
-            background: rgba(255,255,255,0.15);
-            border-radius: 16px;
-            padding: 24px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: transform 0.2s;
-            min-height: 280px;
+        /* Extension and Trunk list styling */
+        .extension-item:hover, .trunk-item:hover {
+            background-color: #f9fafb;
         }
-
-        .card:hover {
-            transform: translateY(-4px);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .card-url {
-            font-size: 0.875rem;
-            opacity: 0.7;
-            margin-bottom: 16px;
-        }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .status-healthy { background: #10b981; }
-        .status-error { background: #ef4444; }
-        .status-unknown { background: #6b7280; }
-
-        .pbx-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin: 16px 0;
-            padding: 16px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4ade80;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            opacity: 0.8;
-            margin-top: 4px;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 8px 0;
-            font-size: 0.875rem;
-        }
-
-        .connection-dot {
+        
+        .status-indicator {
             width: 8px;
             height: 8px;
             border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        
+        .status-offline {
+            background-color: #ef4444;
+        }
+        
+        .status-busy {
+            background-color: #f59e0b;
         }
 
-        .connected { background: #10b981; }
-        .disconnected { background: #ef4444; }
-        .unknown { background: #6b7280; }
-
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
+        /* Collapsible panel animations */
+        .collapse-enter {
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .collapse-exit {
+            animation: slideUp 0.3s ease-in;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                max-height: 1000px;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
         }
 
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 14px;
+        /* Improved focus states */
+        input:focus, textarea:focus, select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        .btn-danger {
-            background: #ef4444;
+        /* Better button hover states */
+        button:hover {
+            transform: translateY(-1px);
+        }
+        
+        button:active {
+            transform: translateY(0);
         }
 
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-        }
-
-        .empty-state h2 {
-            font-size: 1.5rem;
-            margin-bottom: 16px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 50px auto;
-            padding: 30px;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 500px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .modal h3 {
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            font-size: 16px;
-        }
-
-        .form-group input::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .last-check {
-            font-size: 0.875rem;
-            opacity: 0.7;
-            margin-top: 8px;
-        }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen">
     <!-- Login Screen -->
-    <div id="loginScreen" class="login-container">
-        <div class="login-box">
-            <h2>🛡️ MSP PBX Dashboard</h2>
-            <p style="margin-bottom: 30px; opacity: 0.8;">Enter password to access dashboard</p>
-            <form class="login-form" onsubmit="handleLogin(event)">
-                <input type="password" id="loginPassword" class="login-input" placeholder="Password" required>
-                <button type="submit" class="login-btn">Login</button>
-                <div id="loginError" class="login-error" style="display: none;"></div>
-            </form>
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-5 bg-white">
+        <div class="w-full max-w-md">
+            <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-8">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">🛡️ MSP PBX Dashboard</h2>
+                    <p class="text-gray-600">Enter password to access dashboard</p>
+                </div>
+                <form class="space-y-6" onsubmit="handleLogin(event)">
+                    <div>
+                        <input type="password" id="loginPassword" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" 
+                               placeholder="Password" required>
+                    </div>
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium">
+                        Login
+                    </button>
+                    <div id="loginError" class="text-red-600 text-sm text-center hidden"></div>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Main Application -->
-    <div id="mainApp" class="main-app">
-        <div class="container">
-            <div class="header">
-                <h1>🛡️ MSP PBX Dashboard</h1>
-                <p>Real-time monitoring for your Yeastar PBX instances</p>
+    <div id="mainApp" class="hidden">
+        <div class="min-h-screen bg-gray-50">
+            <!-- Header -->
+            <div class="bg-white border-b border-gray-200 px-6 py-4">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">🛡️ MSP PBX Dashboard</h1>
+                            <p class="text-gray-600 mt-1">Real-time monitoring for your Yeastar PBX instances</p>
+                        </div>
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <div class="w-2 h-2 bg-green-500 rounded-full status-dot"></div>
+                                <span id="lastUpdate">Last update: Never</span>
+                            </div>
+                            <div class="text-right">
+                                <div id="instanceCount" class="text-sm font-medium text-gray-900"></div>
+                                <div id="serverBreakdown" class="text-xs text-gray-500"></div>
+                            </div>
+                            <div class="text-xs text-gray-400 hidden md:block" title="Keyboard Shortcuts: Ctrl+R (Refresh), Ctrl+Shift+Q (Toggle Quick Access), Ctrl+Shift+D (Toggle Details)">
+                                ⌨️ Shortcuts
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="controls">
-                <div class="status">
-                    <div class="status-dot"></div>
-                    <span id="lastUpdate">Last update: Never</span>
-                </div>
-                <div>
-                    <button class="btn" onclick="testAPI()" style="background: #6b7280; margin-right: 10px;">
-                        Test API
-                    </button>
-                    <button class="btn" onclick="debugAPI()" style="background: #ef4444; margin-right: 10px;">
-                        Debug API
-                    </button>
-                    <button class="btn" onclick="openAddModal()">
-                        + Add PBX Instance
-                    </button>
+            <!-- Stats Navbar -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+                <div class="max-w-7xl mx-auto px-6 py-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                        <!-- Total Instances -->
+                        <div class="text-center cursor-pointer hover:bg-blue-600 rounded p-2 transition-colors" onclick="showAllClients()">
+                            <div class="text-2xl font-bold text-white" id="statsTotal">0</div>
+                            <div class="text-xs text-blue-100">Total Clients</div>
+                        </div>
+                        
+                        <!-- Online Instances -->
+                        <div class="text-center cursor-pointer hover:bg-blue-600 rounded p-2 transition-colors" onclick="filterByStatus('healthy')">
+                            <div class="text-2xl font-bold text-green-300" id="statsOnline">0</div>
+                            <div class="text-xs text-blue-100">Online</div>
+                        </div>
+                        
+                        <!-- Total Extensions -->
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-white" id="statsTotalExt">0</div>
+                            <div class="text-xs text-blue-100">Total Extensions</div>
+                        </div>
+                        
+                        <!-- Online Extensions -->
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-300" id="statsOnlineExt">0</div>
+                            <div class="text-xs text-blue-100">Online Extensions</div>
+                        </div>
+                        
+                        <!-- Active Calls -->
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-yellow-300" id="statsActiveCalls">0</div>
+                            <div class="text-xs text-blue-100">Active Calls</div>
+                        </div>
+                        
+                        <!-- Total Trunks -->
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-white" id="statsTotalTrunks">0</div>
+                            <div class="text-xs text-blue-100">Total Trunks</div>
+                        </div>
+                        
+                        <!-- Active Trunks -->
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-300" id="statsActiveTrunks">0</div>
+                            <div class="text-xs text-blue-100">Active Trunks</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Stats Row -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-blue-600">
+                        <!-- PBX Servers -->
+                        <div class="text-center">
+                            <div class="text-lg font-semibold text-white" id="statsPBXServers">0</div>
+                            <div class="text-xs text-blue-100">PBX Servers</div>
+                        </div>
+                        
+                        <!-- Shared Servers -->
+                        <div class="text-center">
+                            <div class="text-lg font-semibold text-blue-200" id="statsSharedServers">0</div>
+                            <div class="text-xs text-blue-100">Shared Servers</div>
+                        </div>
+                        
+                        <!-- Error Rate -->
+                        <div class="text-center">
+                            <div class="text-lg font-semibold" id="statsErrorRate">0%</div>
+                            <div class="text-xs text-blue-100">Error Rate</div>
+                        </div>
+                        
+                        <!-- Last Health Check -->
+                        <div class="text-center">
+                            <div class="text-lg font-semibold text-blue-200" id="statsLastCheck">Never</div>
+                            <div class="text-xs text-blue-100">Last Check</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div id="pbxGrid" class="grid"></div>
+            <!-- PBX Server Quick Access Navbar -->
+            <div class="bg-white border-b border-gray-200 px-6 py-3" id="pbxServerSection">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="togglePBXServerSection()" 
+                                    title="Collapse/Expand PBX Server Section (Ctrl+Shift+Q)"
+                                    class="flex items-center space-x-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                                <svg id="pbxSectionChevron" class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                                <span>PBX Server Quick Access</span>
+                            </button>
+                            <span class="text-xs text-gray-500" id="pbxServerCount">Loading...</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="clearPBXSelection()" 
+                                    class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors">
+                                Clear Selection
+                            </button>
+                            <button onclick="togglePBXServerSection()" 
+                                    title="Collapse/Expand PBX Server Section"
+                                    class="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2 transition-all duration-300" id="pbxServerNavbar">
+                        <!-- PBX server buttons will be populated here -->
+                    </div>
+                </div>
+            </div>
 
-            <div id="emptyState" class="empty-state" style="display: none;">
-                <h2>No PBX Instances</h2>
-                <p>Add your first Yeastar PBX to start monitoring</p>
-                <br>
-                <button class="btn" onclick="openAddModal()">Add Your First PBX</button>
+            <!-- Selected PBX Details Panel -->
+            <div id="selectedPBXPanel" class="hidden bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-blue-200 px-6 py-4">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="toggleSelectedPBXPanel()" 
+                                    title="Collapse/Expand PBX Details Panel (Ctrl+Shift+D)"
+                                    class="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                                <svg id="selectedPBXChevron" class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                                <span id="selectedPBXTitle">PBX Server Details</span>
+                            </button>
+                            <p class="text-sm text-gray-600" id="selectedPBXSubtitle">Loading...</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="refreshSelectedPBX()" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                🔄 Refresh PBX Data
+                            </button>
+                            <button onclick="clearPBXSelection()" 
+                                    title="Close PBX Details Panel"
+                                    class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Collapsible Content -->
+                    <div id="selectedPBXContent" class="transition-all duration-300">
+                    
+                    <!-- PBX Stats Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="text-2xl font-bold text-blue-600" id="selectedPBXExtensions">-</div>
+                            <div class="text-sm text-gray-600">Total Extensions</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="text-2xl font-bold text-green-600" id="selectedPBXOnlineExt">-</div>
+                            <div class="text-sm text-gray-600">Online Extensions</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="text-2xl font-bold text-purple-600" id="selectedPBXTrunks">-</div>
+                            <div class="text-sm text-gray-600">Total Trunks</div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="text-2xl font-bold text-green-600" id="selectedPBXActiveTrunks">-</div>
+                            <div class="text-sm text-gray-600">Active Trunks</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Extensions and Trunks Details -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Extensions List -->
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-medium text-gray-900">Extensions</h4>
+                                <span class="text-xs text-gray-500" id="selectedPBXExtensionCount">Loading...</span>
+                            </div>
+                            <div class="max-h-64 overflow-y-auto" id="selectedPBXExtensionList">
+                                <div class="text-sm text-gray-500">Loading extension details...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Trunks List -->
+                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-medium text-gray-900">Trunks</h4>
+                                <span class="text-xs text-gray-500" id="selectedPBXTrunkCount">Loading...</span>
+                            </div>
+                            <div class="max-h-64 overflow-y-auto" id="selectedPBXTrunkList">
+                                <div class="text-sm text-gray-500">Loading trunk details...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Clients on this PBX -->
+                    <div class="bg-white rounded-lg p-4 border border-blue-200">
+                        <h4 class="text-sm font-medium text-gray-900 mb-3">Clients on this PBX Server</h4>
+                        <div class="flex flex-wrap gap-2" id="selectedPBXClients">
+                            <!-- Client badges will be populated here -->
+                        </div>
+                    </div>
+                    </div> <!-- End of selectedPBXContent -->
+                </div>
+            </div>
+            <div class="bg-white border-b border-gray-200 px-6 py-4">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <input type="text" id="searchInput" 
+                                       placeholder="🔍 Search PBX clients..." 
+                                       class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                       onkeyup="filterPBXInstances()" />
+                                <div id="searchResults" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg mt-1 shadow-lg hidden z-50 max-h-48 overflow-y-auto"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="refreshData()" 
+                                    title="Refresh all PBX data from server (Ctrl+R)"
+                                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+                                🔄 Refresh Data
+                            </button>
+                            <button onclick="testAPI()" 
+                                    class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium">
+                                Test API
+                            </button>
+                            <button onclick="debugAPI()" 
+                                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                                Debug API
+                            </button>
+                            <button onclick="openImportModal()" 
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                                📁 Import CSV
+                            </button>
+                            <button onclick="openAddModal()" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                + Add PBX Client
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="max-w-7xl mx-auto px-6 py-6">
+                <div id="pbxGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"></div>
+                
+                <!-- Card overlay for expanded view -->
+                <div id="cardOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40" onclick="closeExpandedCard()"></div>
+
+                <div id="emptyState" class="text-center py-16 hidden">
+                    <div class="bg-white rounded-xl border border-gray-200 p-12 max-w-md mx-auto">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">No PBX Instances</h2>
+                        <p class="text-gray-600 mb-6">Add your first Yeastar PBX to start monitoring</p>
+                        <button onclick="openAddModal()" 
+                                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            Add Your First PBX
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Add PBX Modal -->
-        <div id="addModal" class="modal">
-            <div class="modal-content">
-                <h3>Add PBX Instance</h3>
-                <form id="addForm">
-                    <div class="form-group">
-                        <label>PBX Name</label>
-                        <input type="text" id="pbxName" placeholder="e.g., Main Office PBX" required>
+        <div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="addModalContent">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <span class="text-2xl mr-2">➕</span>
+                        Add PBX Client
+                    </h3>
+                    <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="p-6 max-h-[70vh] overflow-y-auto">
+                    <form id="addForm" class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">PBX Name</label>
+                            <input type="text" id="pbxName" 
+                                   placeholder="e.g., Main Office PBX" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" 
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">PBX URL</label>
+                            <input type="url" id="pbxUrl" 
+                                   placeholder="https://your-tenant.pbx.yeastar.com" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" 
+                                   required>
+                            <p class="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded">
+                                <strong>Yeastar Cloud:</strong> https://[tenant].pbx.yeastar.com<br>
+                                <strong>On-premise:</strong> https://your-pbx-ip-or-domain.com
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">App ID (Client ID)</label>
+                            <input type="text" id="appId" 
+                                   placeholder="Your API App ID" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">App Secret (Client Secret)</label>
+                            <input type="password" id="appSecret" 
+                                   placeholder="Your API App Secret" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors">
+                            <p class="text-xs text-gray-500 mt-2 bg-blue-50 p-2 rounded">
+                                💡 Leave empty to add credentials later
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="isShared" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="isShared" class="ml-3 text-sm font-medium text-gray-700">This is a shared PBX server</label>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                Check this if multiple customers share the same PBX instance (e.g., smart1.pbx.yeastarycm.co.za)
+                            </p>
+                        </div>
+                    </form>
+                    
+                    <!-- Action Buttons for Editing -->
+                    <div id="editActions" class="hidden mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-900 mb-3">Actions</h4>
+                        <div class="flex flex-wrap gap-3 mb-4">
+                            <button type="button" onclick="testPBXConnection()" 
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                🧪 Test Connection
+                            </button>
+                            <button type="button" onclick="deletePBXClient()" 
+                                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                🗑️ Delete Client
+                            </button>
+                            <button type="button" onclick="viewPBXLogs()" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                📋 View Logs
+                            </button>
+                        </div>
+                        
+                        <!-- Error Log Section -->
+                        <div id="errorLogSection" class="hidden">
+                            <h5 class="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                                📋 Recent Error Logs
+                                <button type="button" onclick="refreshPBXLogs()" 
+                                        class="ml-2 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs">
+                                    🔄 Refresh
+                                </button>
+                            </h5>
+                            <div id="errorLogContent" class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs font-mono max-h-48 overflow-y-auto">
+                                <div class="text-gray-500">Loading logs...</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>PBX URL</label>
-                        <input type="url" id="pbxUrl" placeholder="https://your-tenant.pbx.yeastar.com" required>
-                        <small style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 4px; display: block;">
-                            For Yeastar Cloud: https://[tenant].pbx.yeastar.com<br>
-                            For On-premise: https://your-pbx-ip-or-domain.com
-                        </small>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+                    <button type="button" onclick="closeModal()" 
+                            class="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button type="submit" form="addForm"
+                            class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        Add Client
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CSV Import Modal -->
+        <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-300 scale-95 opacity-0" id="importModalContent">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <span class="text-2xl mr-2">📁</span>
+                        Import PBX Clients from CSV
+                    </h3>
+                    <button onclick="closeImportModal()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="p-6 max-h-[70vh] overflow-y-auto">
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                        <p class="text-sm text-blue-800 font-medium mb-3">📋 Supported Formats:</p>
+                        <div class="space-y-2">
+                            <code class="block text-xs text-blue-700 bg-white px-2 py-1 rounded">name,url,appId,appSecret,isShared</code>
+                            <code class="block text-xs text-blue-700 bg-white px-2 py-1 rounded">Name	URL	AppId	AppSecret	IsShared</code>
+                        </div>
+                        <p class="text-xs text-blue-600 mt-3">
+                            💡 Leave appId and appSecret empty to add credentials later. URLs with /login suffix will be automatically cleaned.
+                        </p>
                     </div>
-                    <div class="form-group">
-                        <label>App ID (Client ID)</label>
-                        <input type="text" id="appId" placeholder="Your API App ID" required>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Select CSV File</label>
+                            <input type="file" id="csvFile" accept=".csv" 
+                                   class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors hover:border-gray-400">
+                        </div>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">OR</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Paste CSV Data</label>
+                            <textarea id="csvData" 
+                                      placeholder="name,url,appId,appSecret,isShared&#10;Client A,https://clienta.pbx.yeastarycm.co.za,,,true&#10;Client B,https://clientb.pbx.yeastarycm.co.za,,,false" 
+                                      class="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm resize-none transition-colors"></textarea>
+                        </div>
+                        
+                        <div id="importPreview" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-48 overflow-y-auto">
+                            <p class="font-medium text-gray-900 mb-3 flex items-center">
+                                <span class="text-green-500 mr-2">✅</span>
+                                Preview:
+                            </p>
+                            <div id="previewContent"></div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>App Secret (Client Secret)</label>
-                        <input type="password" id="appSecret" placeholder="Your API App Secret" required>
-                        <small style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 4px; display: block;">
-                            Enter your API App Secret from the PBX API configuration
-                        </small>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn" onclick="closeModal()">Cancel</button>
-                        <button type="submit" class="btn">Add PBX</button>
-                    </div>
-                </form>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+                    <button type="button" onclick="closeImportModal()" 
+                            class="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="previewCSV()" 
+                            class="px-6 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                        Preview
+                    </button>
+                    <button type="button" onclick="importCSV()" 
+                            class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        Import
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -443,7 +668,71 @@
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
     <script>
         // Global variables
-        let socket, pbxInstances = [];
+        let socket, pbxInstances = [], filteredInstances = [];
+
+        // Search and filter functionality
+        function filterPBXInstances() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchResults = document.getElementById('searchResults');
+            
+            if (searchTerm.length === 0) {
+                filteredInstances = pbxInstances;
+                searchResults.classList.add('hidden');
+            } else {
+                filteredInstances = pbxInstances.filter(pbx => 
+                    pbx.name.toLowerCase().includes(searchTerm) ||
+                    pbx.url.toLowerCase().includes(searchTerm) ||
+                    pbx.status.toLowerCase().includes(searchTerm)
+                );
+                
+                // Show search suggestions
+                if (filteredInstances.length > 0 && searchTerm.length > 1) {
+                    searchResults.innerHTML = filteredInstances.slice(0, 5).map(pbx => `
+                        <div class="px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50" 
+                             onclick="selectPBX('${pbx.id}')">
+                            <div class="font-medium text-gray-900 text-sm">${pbx.name}</div>
+                            <div class="text-xs text-gray-500">${new URL(pbx.url).hostname} • ${pbx.status}</div>
+                        </div>
+                    `).join('');
+                    searchResults.classList.remove('hidden');
+                } else {
+                    searchResults.classList.add('hidden');
+                }
+            }
+            
+            renderPBXGrid();
+            updateStatsNavbar();
+        }
+
+        // Select PBX from search results
+        function selectPBX(pbxId) {
+            const pbx = pbxInstances.find(p => p.id === pbxId);
+            if (pbx) {
+                document.getElementById('searchInput').value = pbx.name;
+                filteredInstances = [pbx];
+                document.getElementById('searchResults').classList.add('hidden');
+                renderPBXGrid();
+                updateStatsNavbar();
+            }
+        }
+
+        // Clear search
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filteredInstances = pbxInstances;
+            document.getElementById('searchResults').classList.add('hidden');
+            renderPBXGrid();
+            updateStatsNavbar();
+        }
+
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            if (searchInput && !searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
 
         // Login functionality
         function handleLogin(event) {
@@ -459,18 +748,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
                     initializeApp();
                 } else {
                     errorDiv.textContent = 'Invalid password';
-                    errorDiv.style.display = 'block';
+                    errorDiv.classList.remove('hidden');
                     document.getElementById('loginPassword').value = '';
                 }
             })
             .catch(error => {
                 errorDiv.textContent = 'Login failed';
-                errorDiv.style.display = 'block';
+                errorDiv.classList.remove('hidden');
             });
         }
 
@@ -478,6 +767,9 @@
         function initializeApp() {
             socket = io();
             pbxInstances = [];
+
+            // Show loading state for stats
+            showStatsLoading();
 
             // Socket.io event handlers
             socket.on('connect', () => {
@@ -487,7 +779,11 @@
             socket.on('pbx-update', (data) => {
                 console.log('📊 Received PBX update:', data);
                 pbxInstances = data;
+                if (filteredInstances.length === 0 || document.getElementById('searchInput').value === '') {
+                    filteredInstances = data;
+                }
                 renderPBXGrid();
+                updateStatsNavbar();
                 updateLastUpdateTime();
             });
 
@@ -496,97 +792,230 @@
                 .then(response => response.json())
                 .then(data => {
                     pbxInstances = data;
+                    filteredInstances = data;
                     renderPBXGrid();
+                    updateStatsNavbar();
                 })
                 .catch(error => console.error('Failed to load PBX data:', error));
 
             // Setup form handler
             document.getElementById('addForm').addEventListener('submit', handleAddPBX);
+            
+            // Initialize PBX Server Section state
+            initializePBXServerSection();
+            
+            // Initialize Selected PBX Panel state  
+            initializeSelectedPBXPanel();
         }
 
-        // Render PBX grid
+        // Show loading state for stats
+        function showStatsLoading() {
+            const loadingElements = [
+                'statsTotal', 'statsOnline', 'statsTotalExt', 'statsOnlineExt',
+                'statsActiveCalls', 'statsTotalTrunks', 'statsActiveTrunks',
+                'statsPBXServers', 'statsSharedServers'
+            ];
+            
+            loadingElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = '...';
+                    element.style.opacity = '0.6';
+                }
+            });
+            
+            document.getElementById('statsErrorRate').textContent = '...';
+            document.getElementById('statsLastCheck').textContent = 'Loading...';
+        }
+
+        // Render PBX grid with simplified cards
         function renderPBXGrid() {
             const grid = document.getElementById('pbxGrid');
             const emptyState = document.getElementById('emptyState');
+            const instancesToShow = filteredInstances.length > 0 ? filteredInstances : pbxInstances;
 
-            if (pbxInstances.length === 0) {
+            if (instancesToShow.length === 0) {
                 grid.style.display = 'none';
-                emptyState.style.display = 'block';
+                if (filteredInstances.length === 0 && pbxInstances.length > 0) {
+                    // Show "no search results" message
+                    emptyState.innerHTML = `
+                        <div class="bg-white rounded-xl border border-gray-200 p-12 max-w-md mx-auto">
+                            <h2 class="text-xl font-semibold text-gray-900 mb-4">No clients found</h2>
+                            <p class="text-gray-600 mb-6">No clients match your search criteria</p>
+                            <button onclick="clearSearch()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">Clear Search</button>
+                        </div>
+                    `;
+                } else {
+                    // Show "no PBX instances" message
+                    emptyState.innerHTML = `
+                        <div class="bg-white rounded-xl border border-gray-200 p-12 max-w-md mx-auto">
+                            <h2 class="text-xl font-semibold text-gray-900 mb-4">No PBX Clients</h2>
+                            <p class="text-gray-600 mb-6">Add your first Yeastar PBX client to start monitoring</p>
+                            <button onclick="openAddModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">Add Your First Client</button>
+                        </div>
+                    `;
+                }
+                emptyState.classList.remove('hidden');
                 return;
             }
 
             grid.style.display = 'grid';
-            emptyState.style.display = 'none';
+            emptyState.classList.add('hidden');
 
-            grid.innerHTML = pbxInstances.map(pbx => {
+            // Update PBX server navbar
+            updatePBXServerNavbar();
+
+            // Calculate unique PBX servers and categorize them
+            const uniqueServers = new Set();
+            const sharedServers = new Set();
+            const dedicatedServers = new Set();
+            
+            pbxInstances.forEach(pbx => {
+                try {
+                    const hostname = new URL(pbx.url).hostname;
+                    uniqueServers.add(hostname);
+                    
+                    // Check if it's a shared server pattern
+                    const isSharedPattern = /smart\d*\.pbx\.yeastarycm\.co\.za|smart\d*\.pbx\.ycmcloud\.co\.za/.test(hostname);
+                    if (isSharedPattern || pbx.isShared) {
+                        sharedServers.add(hostname);
+                    } else {
+                        dedicatedServers.add(hostname);
+                    }
+                } catch (error) {
+                    // Skip invalid URLs
+                }
+            });
+
+            // Update instance counter with both clients and servers
+            const searchTerm = document.getElementById('searchInput').value;
+            const counterElement = document.getElementById('instanceCount');
+            const breakdownElement = document.getElementById('serverBreakdown');
+            
+            if (searchTerm) {
+                const uniqueSearchServers = new Set();
+                instancesToShow.forEach(pbx => {
+                    try {
+                        const hostname = new URL(pbx.url).hostname;
+                        uniqueSearchServers.add(hostname);
+                    } catch (error) {
+                        // Skip invalid URLs
+                    }
+                });
+                counterElement.textContent = `Showing ${instancesToShow.length} clients on ${uniqueSearchServers.size} servers`;
+                breakdownElement.textContent = `(of ${pbxInstances.length} total clients on ${uniqueServers.size} servers)`;
+            } else {
+                counterElement.textContent = `${pbxInstances.length} clients • ${uniqueServers.size} PBX servers`;
+                breakdownElement.textContent = `${sharedServers.size} shared • ${dedicatedServers.size} dedicated`;
+            }
+
+            // Render simplified cards
+            grid.innerHTML = instancesToShow.map(pbx => {
                 const health = pbx.health || {};
-                const systemInfo = health.systemInfo || {};
-                
-                // Extract stats from system info (mock data for now since API isn't working)
-                const extensions = systemInfo.extensions || Math.floor(Math.random() * 50) + 10;
-                const activeCalls = systemInfo.activeCalls || Math.floor(Math.random() * 8);
-                const uptime = systemInfo.uptime || `${Math.floor(Math.random() * 30) + 1} days`;
-                const version = systemInfo.version || 'K2 v2.0';
                 
                 const connectionStatus = pbx.status === 'healthy' ? 'connected' : 
-                                       pbx.status === 'error' ? 'disconnected' : 'unknown';
+                                       pbx.status === 'error' ? 'disconnected' : 
+                                       pbx.status === 'pending' ? 'unknown' : 'unknown';
                 const connectionText = pbx.status === 'healthy' ? 'Connected' : 
-                                     pbx.status === 'error' ? 'Disconnected' : 'Unknown';
+                                     pbx.status === 'error' ? 'Disconnected' : 
+                                     pbx.status === 'pending' ? 'Pending Credentials' : 'Unknown';
+
+                const statusColors = {
+                    'healthy': 'bg-green-100 text-green-800',
+                    'error': 'bg-red-100 text-red-800',
+                    'pending': 'bg-yellow-100 text-yellow-800',
+                    'unknown': 'bg-gray-100 text-gray-800'
+                };
+
+                const connectionDotColors = {
+                    'connected': 'bg-green-500',
+                    'disconnected': 'bg-red-500',
+                    'unknown': 'bg-gray-400'
+                };
+
+                // Get PBX hostname for server identification
+                let pbxHostname = 'Unknown';
+                try {
+                    pbxHostname = new URL(pbx.url).hostname;
+                } catch (error) {
+                    pbxHostname = pbx.url;
+                }
 
                 return `
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">${pbx.name}</div>
-                            <div class="status-badge status-${pbx.status}">${pbx.status}</div>
-                        </div>
-                        <div class="card-url">${new URL(pbx.url).hostname}</div>
-                        
-                        <div class="connection-status">
-                            <div class="connection-dot ${connectionStatus}"></div>
-                            <span>${connectionText}</span>
-                            ${health.apiType ? `<span style="opacity: 0.7;">• ${health.apiType}</span>` : ''}
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 card-hover transition-all duration-300 hover:shadow-lg">
+                        <!-- Card Header -->
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-lg font-semibold text-gray-900 truncate">${pbx.name}</h3>
+                                <p class="text-sm text-gray-500 truncate cursor-pointer hover:text-blue-600" 
+                                   onclick="window.open('${pbx.url}', '_blank')" 
+                                   title="Click to open PBX">
+                                    🔗 ${pbxHostname}
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-2 ml-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColors[pbx.status] || statusColors.unknown}">
+                                    ${pbx.status}
+                                </span>
+                            </div>
                         </div>
 
-                        ${pbx.status === 'healthy' ? `
-                            <div class="pbx-stats">
-                                <div class="stat-item">
-                                    <div class="stat-value">${extensions}</div>
-                                    <div class="stat-label">Extensions</div>
+                        <!-- Connection Status -->
+                        <div class="flex items-center space-x-2 mb-3">
+                            <div class="w-2 h-2 rounded-full ${connectionDotColors[connectionStatus]}"></div>
+                            <span class="text-sm text-gray-600">${connectionText}</span>
+                            ${health.apiType ? `<span class="text-xs text-gray-400">• ${health.apiType}</span>` : ''}
+                        </div>
+
+                        <!-- PBX Server Info -->
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-gray-700">PBX Server:</span>
+                                <button onclick="loadPBXServer('${pbxHostname}')" 
+                                        class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition-colors">
+                                    View Server Details
+                                </button>
+                            </div>
+                            <div class="text-sm text-gray-600">${pbxHostname}</div>
+                            <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                <span>${pbx.isShared ? '🏢 Shared Server' : '🏠 Dedicated Server'}</span>
+                                ${pbx.lastCheck ? `<span>Last check: ${new Date(pbx.lastCheck).toLocaleString()}</span>` : ''}
+                            </div>
+                        </div>
+
+                        ${pbx.status === 'pending' ? `
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-yellow-600">⚙️</span>
+                                    <span class="text-sm text-yellow-700">${pbx.health?.message || 'Click Manage to add API credentials'}</span>
                                 </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">${activeCalls}</div>
-                                    <div class="stat-label">Active Calls</div>
+                            </div>
+                        ` : pbx.status === 'error' ? `
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                                <div class="text-sm text-red-700">
+                                    ${pbx.health?.error?.includes('MAX LIMITATION EXCEEDED') ? 
+                                        '⏱️ API Rate Limit - Will retry in next check cycle' : 
+                                        pbx.health?.error || 'Connection error'}
                                 </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">${uptime}</div>
-                                    <div class="stat-label">Uptime</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value">${version}</div>
-                                    <div class="stat-label">Version</div>
+                            </div>
+                        ` : pbx.status === 'healthy' ? `
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-green-600">✅</span>
+                                    <span class="text-sm text-green-700">Connected and operational</span>
                                 </div>
                             </div>
                         ` : ''}
-
-                        ${pbx.health && pbx.health.error ? `
-                            <div style="background: rgba(239, 68, 68, 0.2); padding: 8px; border-radius: 6px; font-size: 14px; margin-bottom: 12px;">
-                                ${pbx.health.error}
-                            </div>
-                        ` : ''}
                         
-                        ${pbx.lastCheck ? `
-                            <div class="last-check">Last checked: ${new Date(pbx.lastCheck).toLocaleString()}</div>
-                        ` : ''}
-                        
-                        <div class="card-actions">
-                            <button class="btn btn-small" onclick="window.open('${pbx.url}', '_blank')">
-                                Open PBX
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2">
+                            <button onclick="window.open('${pbx.url}', '_blank')" 
+                                    class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                🔗 Open PBX
                             </button>
-                            <button class="btn btn-small" onclick="testPBX('${pbx.id}')" style="background: #6b7280;">
-                                Test Now
-                            </button>
-                            <button class="btn btn-small btn-danger" onclick="deletePBX('${pbx.id}')">
-                                Delete
+                            <button onclick="editPBX('${pbx.id}')" 
+                                    class="flex-1 px-4 py-2.5 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
+                                ⚙️ Manage
                             </button>
                         </div>
                     </div>
@@ -595,43 +1024,298 @@
         }
 
         // Update last update time
-        function updateLastUpdateTime() {
+        function updateLastUpdateTime(isManualRefresh = false) {
             const now = new Date();
-            document.getElementById('lastUpdate').textContent = 
-                `Last update: ${now.toLocaleTimeString()}`;
+            const timeString = now.toLocaleTimeString();
+            const prefix = isManualRefresh ? 'Manual refresh' : 'Last update';
+            document.getElementById('lastUpdate').textContent = `${prefix}: ${timeString}`;
+        }
+
+        // Update statistics navbar
+        function updateStatsNavbar() {
+            const stats = calculateGlobalStats();
+            
+            // Update main stats with animation
+            animateCounterUpdate('statsTotal', stats.totalClients);
+            animateCounterUpdate('statsOnline', stats.onlineClients);
+            animateCounterUpdate('statsTotalExt', stats.totalExtensions);
+            animateCounterUpdate('statsOnlineExt', stats.onlineExtensions);
+            animateCounterUpdate('statsActiveCalls', stats.activeCalls);
+            animateCounterUpdate('statsTotalTrunks', stats.totalTrunks);
+            animateCounterUpdate('statsActiveTrunks', stats.activeTrunks);
+            
+            // Update secondary stats
+            document.getElementById('statsPBXServers').textContent = stats.totalServers;
+            document.getElementById('statsSharedServers').textContent = stats.sharedServers;
+            
+            // Update error rate with color coding
+            const errorRateElement = document.getElementById('statsErrorRate');
+            errorRateElement.textContent = stats.errorRate + '%';
+            if (stats.errorRate > 20) {
+                errorRateElement.className = 'text-lg font-semibold text-red-300';
+            } else if (stats.errorRate > 10) {
+                errorRateElement.className = 'text-lg font-semibold text-yellow-300';
+            } else {
+                errorRateElement.className = 'text-lg font-semibold text-green-300';
+            }
+            
+            // Update last check time
+            document.getElementById('statsLastCheck').textContent = stats.lastCheckTime;
+        }
+
+        // Animate counter updates for better visual feedback
+        function animateCounterUpdate(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseInt(element.textContent.replace(/,/g, '')) || 0;
+            
+            if (currentValue !== newValue) {
+                element.style.transform = 'scale(1.1)';
+                element.style.transition = 'transform 0.2s ease';
+                
+                setTimeout(() => {
+                    element.textContent = newValue.toLocaleString();
+                    element.style.transform = 'scale(1)';
+                }, 100);
+            } else {
+                element.textContent = newValue.toLocaleString();
+            }
+        }
+
+        // Calculate global statistics from all PBX instances
+        function calculateGlobalStats() {
+            const uniqueServers = new Set();
+            const sharedServers = new Set();
+            let totalExtensions = 0;
+            let onlineExtensions = 0;
+            let activeCalls = 0;
+            let totalTrunks = 0;
+            let activeTrunks = 0;
+            let onlineClients = 0;
+            let errorClients = 0;
+            let lastCheckTimestamp = 0;
+            
+            pbxInstances.forEach(pbx => {
+                try {
+                    const hostname = new URL(pbx.url).hostname;
+                    uniqueServers.add(hostname);
+                    
+                    // Check if it's a shared server
+                    const isSharedPattern = /smart\d*\.pbx\.yeastarycm\.co\.za|smart\d*\.pbx\.ycmcloud\.co\.za/.test(hostname);
+                    if (isSharedPattern || pbx.isShared) {
+                        sharedServers.add(hostname);
+                    }
+                } catch (error) {
+                    // Skip invalid URLs
+                }
+                
+                // Count client status
+                if (pbx.status === 'healthy') {
+                    onlineClients++;
+                } else if (pbx.status === 'error') {
+                    errorClients++;
+                }
+                
+                // Aggregate extension and trunk data
+                if (pbx.health && pbx.health.systemInfo) {
+                    const systemInfo = pbx.health.systemInfo;
+                    
+                    // Extensions
+                    if (systemInfo.extensions && typeof systemInfo.extensions === 'number') {
+                        totalExtensions += systemInfo.extensions;
+                    }
+                    if (systemInfo.registeredExtensions && typeof systemInfo.registeredExtensions === 'number') {
+                        onlineExtensions += systemInfo.registeredExtensions;
+                    }
+                    
+                    // Trunks
+                    if (systemInfo.trunks && typeof systemInfo.trunks === 'number') {
+                        totalTrunks += systemInfo.trunks;
+                    }
+                    if (systemInfo.activeTrunks && typeof systemInfo.activeTrunks === 'number') {
+                        activeTrunks += systemInfo.activeTrunks;
+                    }
+                    
+                    // Active calls (if available in future API updates)
+                    if (systemInfo.activeCalls && typeof systemInfo.activeCalls === 'number') {
+                        activeCalls += systemInfo.activeCalls;
+                    }
+                }
+                
+                // Track latest check time
+                if (pbx.lastCheck) {
+                    const checkTime = new Date(pbx.lastCheck).getTime();
+                    if (checkTime > lastCheckTimestamp) {
+                        lastCheckTimestamp = checkTime;
+                    }
+                }
+            });
+            
+            // Calculate error rate
+            const errorRate = pbxInstances.length > 0 ? 
+                Math.round((errorClients / pbxInstances.length) * 100) : 0;
+            
+            // Format last check time
+            let lastCheckTime = 'Never';
+            if (lastCheckTimestamp > 0) {
+                const now = Date.now();
+                const diffMinutes = Math.floor((now - lastCheckTimestamp) / (1000 * 60));
+                if (diffMinutes < 1) {
+                    lastCheckTime = 'Just now';
+                } else if (diffMinutes < 60) {
+                    lastCheckTime = `${diffMinutes}m ago`;
+                } else {
+                    const diffHours = Math.floor(diffMinutes / 60);
+                    lastCheckTime = `${diffHours}h ago`;
+                }
+            }
+            
+            return {
+                totalClients: pbxInstances.length,
+                onlineClients,
+                totalExtensions,
+                onlineExtensions,
+                activeCalls,
+                totalTrunks,
+                activeTrunks,
+                totalServers: uniqueServers.size,
+                sharedServers: sharedServers.size,
+                errorRate,
+                lastCheckTime
+            };
+        }
+
+        // Filter functions for clickable stats
+        function showAllClients() {
+            document.getElementById('searchInput').value = '';
+            filteredInstances = pbxInstances;
+            renderPBXGrid();
+            updateStatsNavbar();
+        }
+
+        function filterByStatus(status) {
+            document.getElementById('searchInput').value = `status:${status}`;
+            filteredInstances = pbxInstances.filter(pbx => pbx.status === status);
+            renderPBXGrid();
+            updateStatsNavbar();
         }
 
         // Modal functions
         function openAddModal() {
-            document.getElementById('addModal').style.display = 'block';
+            console.log('🔓 Opening modal...');
+            const modal = document.getElementById('addModal');
+            const content = document.getElementById('addModalContent');
+            
+            modal.classList.remove('hidden');
+            
+            // Trigger animation
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function openImportModal() {
+            const modal = document.getElementById('importModal');
+            const content = document.getElementById('importModalContent');
+            
+            modal.classList.remove('hidden');
+            
+            // Trigger animation
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
         }
 
         function closeModal() {
-            document.getElementById('addModal').style.display = 'none';
-            document.getElementById('addForm').reset();
+            const modal = document.getElementById('addModal');
+            const content = document.getElementById('addModalContent');
+            
+            if (!modal || !content) {
+                console.error('❌ Modal elements not found');
+                return;
+            }
+            
+            // Animate out
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                
+                const form = document.getElementById('addForm');
+                if (form) {
+                    form.reset();
+                    delete form.dataset.editId;
+                }
+                
+                // Reset form state
+                const modalTitle = document.querySelector('#addModal h3');
+                const submitButton = document.querySelector('#addForm button[type="submit"]');
+                const editActions = document.getElementById('editActions');
+                const errorLogSection = document.getElementById('errorLogSection');
+                
+                if (modalTitle) {
+                    modalTitle.innerHTML = '<span class="text-2xl mr-2">➕</span>Add PBX Client';
+                }
+                if (submitButton) {
+                    submitButton.textContent = 'Add Client';
+                }
+                if (editActions) {
+                    editActions.classList.add('hidden');
+                }
+                if (errorLogSection) {
+                    errorLogSection.classList.add('hidden');
+                }
+                
+                // Clear global editing ID
+                window.currentEditingPBXId = null;
+            }, 300);
         }
 
-        // Add PBX handler
+        function closeImportModal() {
+            const modal = document.getElementById('importModal');
+            const content = document.getElementById('importModalContent');
+            
+            // Animate out
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.getElementById('csvFile').value = '';
+                document.getElementById('csvData').value = '';
+                document.getElementById('importPreview').classList.add('hidden');
+            }, 300);
+        }
+
+        // Add/Edit PBX handler
         async function handleAddPBX(e) {
             e.preventDefault();
             
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Adding...';
+            const isEdit = e.target.dataset.editId;
+            
+            submitBtn.textContent = isEdit ? 'Updating...' : 'Adding...';
             submitBtn.disabled = true;
             
             const formData = {
                 name: document.getElementById('pbxName').value.trim(),
                 url: document.getElementById('pbxUrl').value.trim(),
                 appId: document.getElementById('appId').value.trim(),
-                appSecret: document.getElementById('appSecret').value.trim()
+                appSecret: document.getElementById('appSecret').value.trim(),
+                isShared: document.getElementById('isShared').checked
             };
 
-            console.log('📝 Submitting PBX data:', { ...formData, appSecret: '[HIDDEN]' });
+            console.log(`📝 ${isEdit ? 'Updating' : 'Adding'} PBX data:`, { ...formData, appSecret: '[HIDDEN]' });
 
             try {
-                const response = await fetch('/api/pbx', {
-                    method: 'POST',
+                const url = isEdit ? `/api/pbx/${isEdit}` : '/api/pbx';
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
@@ -653,7 +1337,7 @@
                         background: #10b981; color: white; padding: 12px 20px;
                         border-radius: 8px; font-weight: 500;
                     `;
-                    successMsg.textContent = `✅ ${formData.name} added successfully!`;
+                    successMsg.textContent = `✅ ${formData.name} ${isEdit ? 'updated' : 'added'} successfully!`;
                     document.body.appendChild(successMsg);
                     
                     setTimeout(() => successMsg.remove(), 3000);
@@ -661,15 +1345,65 @@
                     throw new Error(result.error || 'Unknown error');
                 }
             } catch (error) {
-                console.error('❌ Add PBX error:', error);
-                alert('Error adding PBX: ' + error.message);
+                console.error(`❌ ${isEdit ? 'Update' : 'Add'} PBX error:`, error);
+                alert(`Error ${isEdit ? 'updating' : 'adding'} PBX: ` + error.message);
             } finally {
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             }
         }
 
-        // Test individual PBX
+        // Edit PBX credentials
+        // Edit PBX credentials - Now with action buttons
+        async function editPBX(id) {
+            console.log('🔧 Opening manage modal for PBX ID:', id);
+            
+            const pbx = pbxInstances.find(p => p.id === id);
+            if (!pbx) {
+                alert('PBX not found');
+                return;
+            }
+            
+            console.log('📋 Found PBX:', pbx.name, 'Status:', pbx.status);
+            
+            // Pre-fill the form with existing data
+            document.getElementById('pbxName').value = pbx.name;
+            document.getElementById('pbxUrl').value = pbx.url;
+            document.getElementById('appId').value = pbx.appId === 'PLACEHOLDER_ID' ? '' : pbx.appId;
+            document.getElementById('appSecret').value = pbx.appSecret === 'PLACEHOLDER_SECRET' ? '' : pbx.appSecret;
+            document.getElementById('isShared').checked = pbx.isShared || false;
+            
+            // Update modal title and button
+            const modalTitle = document.querySelector('#addModal h3');
+            const submitButton = document.querySelector('#addForm button[type="submit"]');
+            const editActions = document.getElementById('editActions');
+            
+            if (modalTitle) {
+                modalTitle.innerHTML = `<span class="text-2xl mr-2">⚙️</span>Manage - ${pbx.name}`;
+            }
+            if (submitButton) {
+                submitButton.textContent = 'Update Client';
+            }
+            
+            // Show action buttons for editing
+            if (editActions) {
+                editActions.classList.remove('hidden');
+            }
+            
+            // Store the ID for updating and actions
+            const form = document.getElementById('addForm');
+            if (form) {
+                form.dataset.editId = id;
+            }
+            
+            // Store ID globally for action buttons
+            window.currentEditingPBXId = id;
+            
+            // Open the modal
+            openAddModal();
+        }
+
+        // Test individual PBX (legacy function - kept for compatibility)
         async function testPBX(id) {
             try {
                 const response = await fetch(`/api/pbx/${id}/test`, {
@@ -688,7 +1422,7 @@
             }
         }
 
-        // Delete PBX
+        // Delete PBX (legacy function - kept for compatibility)
         async function deletePBX(id) {
             if (!confirm('Are you sure you want to delete this PBX?')) return;
 
@@ -704,6 +1438,604 @@
                 }
             } catch (error) {
                 alert('Network error: ' + error.message);
+            }
+        }
+
+        // Action button functions for modal
+        async function testPBXConnection() {
+            if (!window.currentEditingPBXId) {
+                alert('No PBX selected for testing');
+                return;
+            }
+            
+            const pbx = pbxInstances.find(p => p.id === window.currentEditingPBXId);
+            if (!pbx) {
+                alert('PBX not found');
+                return;
+            }
+            
+            // Use the existing testPBX function
+            await testPBX(window.currentEditingPBXId);
+        }
+
+        async function deletePBXClient() {
+            if (!window.currentEditingPBXId) {
+                alert('No PBX selected for deletion');
+                return;
+            }
+            
+            const pbx = pbxInstances.find(p => p.id === window.currentEditingPBXId);
+            if (!pbx) {
+                alert('PBX not found');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete "${pbx.name}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/pbx/${window.currentEditingPBXId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Close modal and show success message
+                    closeModal();
+                    
+                    const successMsg = document.createElement('div');
+                    successMsg.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; z-index: 9999;
+                        background: #ef4444; color: white; padding: 12px 20px;
+                        border-radius: 8px; font-weight: 500;
+                    `;
+                    successMsg.textContent = `🗑️ ${pbx.name} deleted successfully!`;
+                    document.body.appendChild(successMsg);
+                    
+                    setTimeout(() => successMsg.remove(), 3000);
+                } else {
+                    alert('Error deleting PBX: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        // View PBX logs function
+        async function viewPBXLogs() {
+            if (!window.currentEditingPBXId) {
+                alert('No PBX selected');
+                return;
+            }
+            
+            const errorLogSection = document.getElementById('errorLogSection');
+            const errorLogContent = document.getElementById('errorLogContent');
+            
+            // Show the log section
+            errorLogSection.classList.remove('hidden');
+            
+            // Load logs
+            await refreshPBXLogs();
+        }
+
+        // Refresh PBX logs function
+        async function refreshPBXLogs() {
+            if (!window.currentEditingPBXId) {
+                return;
+            }
+            
+            const errorLogContent = document.getElementById('errorLogContent');
+            const pbx = pbxInstances.find(p => p.id === window.currentEditingPBXId);
+            
+            if (!pbx) {
+                errorLogContent.innerHTML = '<div class="text-red-400">PBX not found</div>';
+                return;
+            }
+            
+            errorLogContent.innerHTML = '<div class="text-yellow-400">Loading logs...</div>';
+            
+            try {
+                const response = await fetch(`/api/pbx/${window.currentEditingPBXId}/logs`);
+                const result = await response.json();
+                
+                if (result.success && result.logs) {
+                    let logHtml = '';
+                    
+                    // Show recent health check results
+                    if (pbx.health) {
+                        logHtml += `<div class="text-blue-400 mb-2">== CURRENT STATUS ==</div>`;
+                        logHtml += `<div class="text-white">Status: ${pbx.status}</div>`;
+                        logHtml += `<div class="text-white">Last Check: ${pbx.lastCheck ? new Date(pbx.lastCheck).toLocaleString() : 'Never'}</div>`;
+                        
+                        if (pbx.health.error) {
+                            logHtml += `<div class="text-red-400">Error: ${pbx.health.error}</div>`;
+                        }
+                        
+                        if (pbx.health.systemInfo) {
+                            logHtml += `<div class="text-green-400">Extensions: ${pbx.health.systemInfo.extensions || 'N/A'}</div>`;
+                            logHtml += `<div class="text-green-400">Trunks: ${pbx.health.systemInfo.trunks || 'N/A'}</div>`;
+                        }
+                        
+                        logHtml += `<div class="text-blue-400 mt-3 mb-2">== RECENT LOGS ==</div>`;
+                    }
+                    
+                    // Show database logs
+                    if (result.logs.length > 0) {
+                        result.logs.forEach(log => {
+                            const timestamp = new Date(log.timestamp).toLocaleString();
+                            const statusColor = log.status === 'healthy' ? 'text-green-400' : 
+                                              log.status === 'error' ? 'text-red-400' : 'text-yellow-400';
+                            
+                            logHtml += `<div class="mb-1">`;
+                            logHtml += `<span class="text-gray-400">[${timestamp}]</span> `;
+                            logHtml += `<span class="${statusColor}">${log.status.toUpperCase()}</span>`;
+                            
+                            if (log.error_message) {
+                                logHtml += `<div class="text-red-300 ml-4">Error: ${log.error_message}</div>`;
+                            }
+                            
+                            if (log.extensions_count !== null) {
+                                logHtml += `<div class="text-gray-300 ml-4">Extensions: ${log.extensions_count}, Trunks: ${log.trunks_count || 0}</div>`;
+                            }
+                            
+                            logHtml += `</div>`;
+                        });
+                    } else {
+                        logHtml += '<div class="text-gray-400">No recent logs found</div>';
+                    }
+                    
+                    errorLogContent.innerHTML = logHtml;
+                } else {
+                    errorLogContent.innerHTML = `<div class="text-red-400">Failed to load logs: ${result.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                errorLogContent.innerHTML = `<div class="text-red-400">Network error: ${error.message}</div>`;
+            }
+        }
+
+        // PBX Server Navbar Functions
+        function updatePBXServerNavbar() {
+            const navbar = document.getElementById('pbxServerNavbar');
+            const serverCountElement = document.getElementById('pbxServerCount');
+            if (!navbar) return;
+            
+            // Group PBX instances by hostname
+            const serverGroups = new Map();
+            
+            pbxInstances.forEach(pbx => {
+                try {
+                    const hostname = new URL(pbx.url).hostname;
+                    if (!serverGroups.has(hostname)) {
+                        serverGroups.set(hostname, {
+                            hostname,
+                            clients: [],
+                            isShared: false,
+                            status: 'unknown'
+                        });
+                    }
+                    
+                    const group = serverGroups.get(hostname);
+                    group.clients.push(pbx);
+                    
+                    // Check if any client on this server is shared
+                    if (pbx.isShared) {
+                        group.isShared = true;
+                    }
+                    
+                    // Determine overall server status
+                    if (pbx.status === 'healthy') {
+                        group.status = 'healthy';
+                    } else if (group.status !== 'healthy' && pbx.status === 'error') {
+                        group.status = 'error';
+                    } else if (group.status === 'unknown') {
+                        group.status = pbx.status;
+                    }
+                } catch (error) {
+                    // Skip invalid URLs
+                }
+            });
+            
+            // Update server count
+            const serverCount = serverGroups.size;
+            const sharedCount = Array.from(serverGroups.values()).filter(s => s.isShared).length;
+            const dedicatedCount = serverCount - sharedCount;
+            
+            if (serverCountElement) {
+                serverCountElement.textContent = `${serverCount} servers (${sharedCount} shared, ${dedicatedCount} dedicated)`;
+            }
+            
+            // Render server buttons
+            const serverButtons = Array.from(serverGroups.values()).map(server => {
+                const statusColors = {
+                    'healthy': 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+                    'error': 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
+                    'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200',
+                    'unknown': 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+                };
+                
+                const serverType = server.isShared ? '🏢' : '🏠';
+                const clientCount = server.clients.length;
+                
+                return `
+                    <button onclick="loadPBXServer('${server.hostname}')" 
+                            class="inline-flex items-center px-3 py-2 border rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md transform hover:scale-105 ${statusColors[server.status]}">
+                        <span class="mr-2">${serverType}</span>
+                        <span class="font-semibold">${server.hostname}</span>
+                        <span class="ml-2 px-2 py-0.5 bg-white bg-opacity-50 rounded-full text-xs">
+                            ${clientCount} client${clientCount !== 1 ? 's' : ''}
+                        </span>
+                    </button>
+                `;
+            }).join('');
+            
+            navbar.innerHTML = serverButtons;
+        }
+
+        // Load detailed PBX server information
+        async function loadPBXServer(hostname) {
+            console.log('🔍 Loading PBX server details for:', hostname);
+            
+            const panel = document.getElementById('selectedPBXPanel');
+            const title = document.getElementById('selectedPBXTitle');
+            const subtitle = document.getElementById('selectedPBXSubtitle');
+            
+            // Show panel
+            panel.classList.remove('hidden');
+            
+            // Initialize panel state
+            initializeSelectedPBXPanel();
+            
+            // Update title
+            title.textContent = `PBX Server: ${hostname}`;
+            subtitle.textContent = 'Loading server details...';
+            
+            // Find clients on this server
+            const serverClients = pbxInstances.filter(pbx => {
+                try {
+                    return new URL(pbx.url).hostname === hostname;
+                } catch (error) {
+                    return false;
+                }
+            });
+            
+            // Update client list
+            updateSelectedPBXClients(serverClients);
+            
+            // Find a client with valid credentials to get server data
+            const validClient = serverClients.find(pbx => 
+                pbx.status === 'healthy' && pbx.health && pbx.health.systemInfo
+            );
+            
+            if (validClient && validClient.health && validClient.health.systemInfo) {
+                const systemInfo = validClient.health.systemInfo;
+                
+                // Update stats
+                document.getElementById('selectedPBXExtensions').textContent = systemInfo.extensions || '-';
+                document.getElementById('selectedPBXOnlineExt').textContent = systemInfo.registeredExtensions || '-';
+                document.getElementById('selectedPBXTrunks').textContent = systemInfo.trunks || '-';
+                document.getElementById('selectedPBXActiveTrunks').textContent = systemInfo.activeTrunks || '-';
+                
+                // Update detailed lists
+                updateExtensionsList(systemInfo.extensionDetails || []);
+                updateTrunksList(systemInfo.trunkDetails || []);
+                
+                const serverType = validClient.isShared ? 'Shared PBX Server' : 'Dedicated PBX Server';
+                const lastCheck = validClient.lastCheck ? new Date(validClient.lastCheck).toLocaleString() : 'Never';
+                subtitle.textContent = `${serverType} • ${serverClients.length} clients • Last updated: ${lastCheck}`;
+                
+            } else {
+                // No valid data available
+                document.getElementById('selectedPBXExtensions').textContent = '-';
+                document.getElementById('selectedPBXOnlineExt').textContent = '-';
+                document.getElementById('selectedPBXTrunks').textContent = '-';
+                document.getElementById('selectedPBXActiveTrunks').textContent = '-';
+                
+                // Clear detailed lists
+                updateExtensionsList([]);
+                updateTrunksList([]);
+                
+                subtitle.textContent = `${serverClients.length} clients • No API data available (credentials needed)`;
+            }
+        }
+
+        // Update client list for selected PBX server
+        function updateSelectedPBXClients(clients) {
+            const container = document.getElementById('selectedPBXClients');
+            if (!container) return;
+            
+            const clientBadges = clients.map(client => {
+                const statusColors = {
+                    'healthy': 'bg-green-100 text-green-800',
+                    'error': 'bg-red-100 text-red-800',
+                    'pending': 'bg-yellow-100 text-yellow-800',
+                    'unknown': 'bg-gray-100 text-gray-800'
+                };
+                
+                return `
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[client.status]} cursor-pointer hover:shadow-md transition-shadow"
+                          onclick="editPBX('${client.id}')" title="Click to manage ${client.name}">
+                        ${client.name}
+                        <span class="ml-2 w-2 h-2 rounded-full ${client.status === 'healthy' ? 'bg-green-500' : client.status === 'error' ? 'bg-red-500' : 'bg-gray-400'}"></span>
+                    </span>
+                `;
+            }).join('');
+            
+            container.innerHTML = clientBadges || '<span class="text-gray-500 text-sm">No clients found</span>';
+        }
+
+        // Refresh selected PBX server data
+        async function refreshSelectedPBX() {
+            const title = document.getElementById('selectedPBXTitle');
+            if (!title || !title.textContent.includes('PBX Server:')) {
+                return;
+            }
+            
+            const hostname = title.textContent.replace('PBX Server: ', '');
+            await loadPBXServer(hostname);
+        }
+
+        // Update extensions list with detailed information
+        function updateExtensionsList(extensions) {
+            const container = document.getElementById('selectedPBXExtensionList');
+            const countElement = document.getElementById('selectedPBXExtensionCount');
+            
+            if (!container || !countElement) return;
+            
+            if (!extensions || extensions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 text-2xl mb-2">📞</div>
+                        <div class="text-sm text-gray-500">No extension data available</div>
+                        <div class="text-xs text-gray-400 mt-1">API credentials may be needed</div>
+                    </div>
+                `;
+                countElement.textContent = '0 extensions';
+                return;
+            }
+            
+            const onlineCount = extensions.filter(ext => {
+                return ext.online_status === 'online' || 
+                       ext.status === 1 || 
+                       ext.status === 'registered' ||
+                       ext.presence_status === 'available';
+            }).length;
+            
+            countElement.textContent = `${extensions.length} extensions (${onlineCount} online)`;
+            
+            const extensionItems = extensions.map(ext => {
+                const isOnline = ext.online_status === 'online' || 
+                               ext.status === 1 || 
+                               ext.status === 'registered' ||
+                               ext.presence_status === 'available';
+                
+                const isBusy = ext.presence_status === 'busy' || 
+                             ext.presence_status === 'dnd' ||
+                             ext.presence_status === 'do_not_disturb' ||
+                             ext.status === 'busy';
+                
+                const isAway = ext.presence_status === 'away';
+                
+                let statusColor, statusClass, statusText;
+                if (isOnline) {
+                    statusColor = 'bg-green-500';
+                    statusClass = 'status-online';
+                    statusText = 'Available';
+                } else if (isBusy) {
+                    statusColor = 'bg-red-500';
+                    statusClass = 'status-busy';
+                    statusText = ext.presence_status === 'do_not_disturb' ? 'Do Not Disturb' : 'Busy';
+                } else if (isAway) {
+                    statusColor = 'bg-yellow-500';
+                    statusClass = 'status-busy';
+                    statusText = 'Away';
+                } else {
+                    statusColor = 'bg-gray-400';
+                    statusClass = 'status-offline';
+                    statusText = 'Offline';
+                }
+                
+                // Use caller_id_name as the primary name, fallback to number
+                const extensionName = ext.caller_id_name || ext.name || `Extension ${ext.number || ext.id}`;
+                const extensionNumber = ext.number || ext.id || '';
+                const role = ext.role_name || '';
+                
+                // Check if any device is actually online
+                let deviceStatus = '';
+                if (ext.online_status) {
+                    const devices = [];
+                    if (ext.online_status.sip_phone?.status === 1) devices.push('📱 SIP Phone');
+                    if (ext.online_status.linkus_mobile?.status === 1) devices.push('📲 Mobile App');
+                    if (ext.online_status.linkus_desktop?.status === 1) devices.push('💻 Desktop App');
+                    if (ext.online_status.linkus_web?.status === 1) devices.push('🌐 Web App');
+                    if (ext.online_status.fxs_phone?.status === 1) devices.push('☎️ Analog Phone');
+                    
+                    if (devices.length > 0) {
+                        deviceStatus = devices.join(', ');
+                        statusText = 'Online';
+                        statusColor = 'bg-green-500';
+                        statusClass = 'status-online';
+                    }
+                }
+                
+                return `
+                    <div class="extension-item flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <div class="status-indicator ${statusClass}"></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <div class="text-sm font-medium text-gray-900 truncate">${extensionName}</div>
+                                    ${extensionNumber ? `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-mono">${extensionNumber}</span>` : ''}
+                                </div>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    ${role ? `<span class="text-xs text-gray-500">${role}</span>` : ''}
+                                    ${deviceStatus ? `<span class="text-xs text-green-600">${deviceStatus}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-xs font-medium ${isOnline || deviceStatus ? 'text-green-600' : isBusy ? 'text-red-600' : isAway ? 'text-yellow-600' : 'text-gray-500'} text-right">
+                            ${statusText}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = extensionItems;
+        }
+
+        // Update trunks list with detailed information
+        function updateTrunksList(trunks) {
+            const container = document.getElementById('selectedPBXTrunkList');
+            const countElement = document.getElementById('selectedPBXTrunkCount');
+            
+            if (!container || !countElement) return;
+            
+            if (!trunks || trunks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 text-2xl mb-2">📡</div>
+                        <div class="text-sm text-gray-500">No trunk data available</div>
+                        <div class="text-xs text-gray-400 mt-1">API credentials may be needed</div>
+                    </div>
+                `;
+                countElement.textContent = '0 trunks';
+                return;
+            }
+            
+            const activeCount = trunks.filter(trunk => {
+                return trunk.status === 1 || 
+                       trunk.status === 'Active' || 
+                       trunk.status === 'registered' ||
+                       trunk.status === 'connected';
+            }).length;
+            
+            countElement.textContent = `${trunks.length} trunks (${activeCount} active)`;
+            
+            const trunkItems = trunks.map(trunk => {
+                const isActive = trunk.status === 1 || 
+                               trunk.status === 'Active' || 
+                               trunk.status === 'registered' ||
+                               trunk.status === 'connected';
+                
+                const isConnecting = trunk.status === 'connecting' ||
+                                   trunk.status === 'registering' ||
+                                   trunk.status === 'trying';
+                
+                let statusColor, statusClass, statusText;
+                if (isActive) {
+                    statusColor = 'bg-green-500';
+                    statusClass = 'status-online';
+                    statusText = 'Connected';
+                } else if (isConnecting) {
+                    statusColor = 'bg-yellow-500';
+                    statusClass = 'status-busy';
+                    statusText = 'Connecting...';
+                } else {
+                    statusColor = 'bg-red-400';
+                    statusClass = 'status-offline';
+                    statusText = 'Disconnected';
+                }
+                
+                // Use the actual trunk name from the API
+                const trunkName = trunk.name || trunk.trunk_name || `Trunk ${trunk.id || 'Unknown'}`;
+                const trunkType = trunk.type || trunk.trunk_type || '';
+                const trunkHost = trunk.host_port || trunk.host || '';
+                const trunkUsername = trunk.username || '';
+                const outboundCID = trunk.def_outbound_cid || '';
+                
+                // Create type badge
+                const typeBadge = trunkType ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">${trunkType.toUpperCase()}</span>` : '';
+                
+                return `
+                    <div class="trunk-item flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <div class="status-indicator ${statusClass}"></div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <div class="text-sm font-medium text-gray-900 truncate">${trunkName}</div>
+                                    ${typeBadge}
+                                </div>
+                                <div class="space-y-1">
+                                    ${trunkHost ? `<div class="text-xs text-gray-600 flex items-center"><span class="text-gray-400 mr-1">🌐</span>${trunkHost}</div>` : ''}
+                                    ${trunkUsername ? `<div class="text-xs text-gray-600 flex items-center"><span class="text-gray-400 mr-1">👤</span>${trunkUsername}</div>` : ''}
+                                    ${outboundCID ? `<div class="text-xs text-gray-600 flex items-center"><span class="text-gray-400 mr-1">📞</span>CID: ${outboundCID}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-xs font-medium ${isActive ? 'text-green-600' : isConnecting ? 'text-yellow-600' : 'text-red-600'} text-right">
+                            ${statusText}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = trunkItems;
+        }
+
+        // Clear PBX server selection
+        function clearPBXSelection() {
+            const panel = document.getElementById('selectedPBXPanel');
+            panel.classList.add('hidden');
+        }
+
+        // Toggle PBX Server Section
+        function togglePBXServerSection() {
+            const navbar = document.getElementById('pbxServerNavbar');
+            const chevron = document.getElementById('pbxSectionChevron');
+            
+            if (navbar.classList.contains('hidden')) {
+                // Expand
+                navbar.classList.remove('hidden');
+                chevron.classList.remove('rotate-180');
+                localStorage.setItem('pbxServerSectionCollapsed', 'false');
+            } else {
+                // Collapse
+                navbar.classList.add('hidden');
+                chevron.classList.add('rotate-180');
+                localStorage.setItem('pbxServerSectionCollapsed', 'true');
+            }
+        }
+
+        // Toggle Selected PBX Details Panel
+        function toggleSelectedPBXPanel() {
+            const content = document.getElementById('selectedPBXContent');
+            const chevron = document.getElementById('selectedPBXChevron');
+            
+            if (content.classList.contains('hidden')) {
+                // Expand
+                content.classList.remove('hidden');
+                chevron.classList.remove('rotate-180');
+                localStorage.setItem('selectedPBXPanelCollapsed', 'false');
+            } else {
+                // Collapse
+                content.classList.add('hidden');
+                chevron.classList.add('rotate-180');
+                localStorage.setItem('selectedPBXPanelCollapsed', 'true');
+            }
+        }
+
+        // Initialize PBX Server Section state from localStorage
+        function initializePBXServerSection() {
+            const isCollapsed = localStorage.getItem('pbxServerSectionCollapsed') === 'true';
+            if (isCollapsed) {
+                const navbar = document.getElementById('pbxServerNavbar');
+                const chevron = document.getElementById('pbxSectionChevron');
+                navbar.classList.add('hidden');
+                chevron.classList.add('rotate-180');
+            }
+        }
+
+        // Initialize Selected PBX Panel state from localStorage
+        function initializeSelectedPBXPanel() {
+            const isCollapsed = localStorage.getItem('selectedPBXPanelCollapsed') === 'true';
+            if (isCollapsed) {
+                const content = document.getElementById('selectedPBXContent');
+                const chevron = document.getElementById('selectedPBXChevron');
+                if (content && chevron) {
+                    content.classList.add('hidden');
+                    chevron.classList.add('rotate-180');
+                }
             }
         }
 
@@ -749,11 +2081,449 @@
             }
         }
 
+        // Refresh Data function - Force UI update
+        async function refreshData() {
+            const refreshBtn = document.querySelector('button[onclick="refreshData()"]');
+            const originalText = refreshBtn.textContent;
+            
+            // Show loading state
+            refreshBtn.textContent = '🔄 Refreshing...';
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add('opacity-50');
+            
+            try {
+                console.log('🔄 Manually refreshing PBX data...');
+                
+                // Fetch fresh data from server
+                const response = await fetch('/api/pbx');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📊 Received fresh data:', data.length, 'PBX instances');
+                
+                // Update global variables
+                pbxInstances = data;
+                if (filteredInstances.length === 0 || document.getElementById('searchInput').value === '') {
+                    filteredInstances = data;
+                }
+                
+                // Force UI refresh
+                renderPBXGrid();
+                updateStatsNavbar();
+                updateLastUpdateTime(true); // Mark as manual refresh
+                
+                // Show success message
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 9999;
+                    background: #10b981; color: white; padding: 12px 20px;
+                    border-radius: 8px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                `;
+                successMsg.textContent = `✅ Data refreshed! Updated ${data.length} PBX instances`;
+                document.body.appendChild(successMsg);
+                
+                setTimeout(() => successMsg.remove(), 3000);
+                
+                console.log('✅ Manual refresh completed successfully');
+                
+            } catch (error) {
+                console.error('❌ Manual refresh failed:', error);
+                
+                // Show error message
+                const errorMsg = document.createElement('div');
+                errorMsg.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 9999;
+                    background: #ef4444; color: white; padding: 12px 20px;
+                    border-radius: 8px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                `;
+                errorMsg.textContent = `❌ Refresh failed: ${error.message}`;
+                document.body.appendChild(errorMsg);
+                
+                setTimeout(() => errorMsg.remove(), 5000);
+                
+            } finally {
+                // Restore button state
+                refreshBtn.textContent = originalText;
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove('opacity-50');
+            }
+        }
+
+        // CSV Import Functions
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            
+            // Detect delimiter (comma or tab)
+            const firstLine = lines[0];
+            const delimiter = firstLine.includes('\t') ? '\t' : ',';
+            
+            const headers = firstLine.split(delimiter).map(h => h.trim());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter).map(v => v.trim());
+                if (values.length >= 2) { // At least name and url
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+                    
+                    // Clean up URL - remove /login suffix if present
+                    if (row.url || row.URL) {
+                        const urlField = row.url || row.URL;
+                        row.url = urlField.replace(/\/login\/?$/, '');
+                    }
+                    
+                    // Map common header variations
+                    if (row.URL && !row.url) row.url = row.URL;
+                    if (row.Name && !row.name) row.name = row.Name;
+                    
+                    data.push(row);
+                }
+            }
+            
+            return data;
+        }
+
+        function previewCSV() {
+            let csvText = '';
+            
+            // Check if file is selected
+            const fileInput = document.getElementById('csvFile');
+            const textInput = document.getElementById('csvData');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    csvText = e.target.result;
+                    showPreview(csvText);
+                };
+                reader.readAsText(file);
+            } else if (textInput.value.trim()) {
+                csvText = textInput.value.trim();
+                showPreview(csvText);
+            } else {
+                alert('Please select a CSV file or paste CSV data');
+            }
+        }
+
+        function showPreview(csvText) {
+            try {
+                const data = parseCSV(csvText);
+                const preview = document.getElementById('importPreview');
+                const content = document.getElementById('previewContent');
+                
+                if (data.length === 0) {
+                    content.innerHTML = '<div class="text-red-600">No valid data found</div>';
+                } else {
+                    let html = `<div class="mb-3 font-medium text-gray-900">${data.length} PBX instances found:</div>`;
+                    data.forEach((row, index) => {
+                        const hasCredentials = row.appId && row.appSecret;
+                        const isShared = row.isShared === 'true' || row.isShared === true;
+                        html += `
+                            <div class="p-2 mb-2 bg-white border border-gray-200 rounded text-sm">
+                                <div class="font-medium text-gray-900">${row.name}</div>
+                                <div class="text-gray-600">${row.url}</div>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    ${hasCredentials ? '<span class="text-green-600 text-xs">✅ Has credentials</span>' : '<span class="text-yellow-600 text-xs">⚠️ No credentials</span>'}
+                                    ${isShared ? '<span class="text-blue-600 text-xs">🏢 Shared</span>' : '<span class="text-gray-600 text-xs">🏠 Dedicated</span>'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    content.innerHTML = html;
+                }
+                
+                preview.classList.remove('hidden');
+            } catch (error) {
+                alert('Error parsing CSV: ' + error.message);
+            }
+        }
+
+        async function importCSV() {
+            let csvText = '';
+            
+            // Get CSV data
+            const fileInput = document.getElementById('csvFile');
+            const textInput = document.getElementById('csvData');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    await processCSVImport(e.target.result);
+                };
+                reader.readAsText(file);
+            } else if (textInput.value.trim()) {
+                await processCSVImport(textInput.value.trim());
+            } else {
+                alert('Please select a CSV file or paste CSV data');
+            }
+        }
+
+        async function processCSVImport(csvText) {
+            try {
+                const data = parseCSV(csvText);
+                
+                if (data.length === 0) {
+                    alert('No valid data found in CSV');
+                    return;
+                }
+                
+                // Convert to the format expected by the API
+                const instances = data.map(row => ({
+                    name: row.name,
+                    url: row.url,
+                    appId: row.appId || 'PLACEHOLDER_ID',
+                    appSecret: row.appSecret || 'PLACEHOLDER_SECRET',
+                    isShared: row.isShared === 'true' || row.isShared === true
+                }));
+                
+                console.log('📊 Importing', instances.length, 'PBX instances...');
+                
+                const response = await fetch('/api/pbx/bulk-import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instances })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeImportModal();
+                    alert(`✅ Successfully imported ${result.imported} PBX instances!${result.errors.length > 0 ? `\n\n⚠️ ${result.errors.length} errors occurred:\n${result.errors.join('\n')}` : ''}`);
+                } else {
+                    alert('❌ Import failed: ' + (result.error || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('Import error:', error);
+                alert('❌ Import failed: ' + error.message);
+            }
+        }
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('addModal');
-            if (event.target === modal) {
+            const addModal = document.getElementById('addModal');
+            const importModal = document.getElementById('importModal');
+            const addModalContent = document.getElementById('addModalContent');
+            const importModalContent = document.getElementById('importModalContent');
+            
+            if (event.target === addModal) {
                 closeModal();
+            } else if (event.target === importModal) {
+                closeImportModal();
+            }
+        }
+
+        // Card expand/minimize functionality
+        let expandedCardId = null;
+
+        function toggleCardExpand(pbxId) {
+            const card = document.getElementById(`card-${pbxId}`);
+            const overlay = document.getElementById('cardOverlay');
+            const icon = document.getElementById(`expand-icon-${pbxId}`);
+            
+            if (expandedCardId === pbxId) {
+                // Minimize
+                closeExpandedCard();
+            } else {
+                // Close any other expanded card first
+                if (expandedCardId) {
+                    closeExpandedCard();
+                }
+                
+                // Expand this card
+                expandedCardId = pbxId;
+                
+                // Add classes for expanded state
+                card.classList.remove('hover:shadow-lg');
+                card.classList.add('fixed', 'inset-4', 'z-50', 'overflow-y-auto', 'shadow-2xl');
+                
+                // Show overlay
+                overlay.classList.remove('hidden');
+                
+                // Update icon
+                icon.classList.add('rotate-180');
+                
+                // Prevent body scroll
+                document.body.style.overflow = 'hidden';
+                
+                // Re-render to show close button
+                renderPBXGrid();
+            }
+        }
+
+        function closeExpandedCard() {
+            if (expandedCardId) {
+                const card = document.getElementById(`card-${expandedCardId}`);
+                const overlay = document.getElementById('cardOverlay');
+                const icon = document.getElementById(`expand-icon-${expandedCardId}`);
+                
+                // Remove expanded classes
+                card.classList.remove('fixed', 'inset-4', 'z-50', 'overflow-y-auto', 'shadow-2xl');
+                card.classList.add('hover:shadow-lg');
+                
+                // Hide overlay
+                overlay.classList.add('hidden');
+                
+                // Update icon
+                if (icon) {
+                    icon.classList.remove('rotate-180');
+                }
+                
+                // Restore body scroll
+                document.body.style.overflow = 'auto';
+                
+                expandedCardId = null;
+                
+                // Re-render to remove close button
+                renderPBXGrid();
+            }
+        }
+
+        // Close expanded card on Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && expandedCardId) {
+                closeExpandedCard();
+            }
+            
+            // Add Ctrl+R or Cmd+R for manual refresh (prevent default browser refresh)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+                event.preventDefault();
+                refreshData();
+            }
+            
+            // Add keyboard shortcuts for collapsible sections
+            if ((event.ctrlKey || event.metaKey) && event.shiftKey) {
+                if (event.key === 'Q') {
+                    // Ctrl+Shift+Q to toggle PBX Server Quick Access
+                    event.preventDefault();
+                    togglePBXServerSection();
+                } else if (event.key === 'D') {
+                    // Ctrl+Shift+D to toggle PBX Details Panel
+                    event.preventDefault();
+                    const panel = document.getElementById('selectedPBXPanel');
+                    if (panel && !panel.classList.contains('hidden')) {
+                        toggleSelectedPBXPanel();
+                    }
+                }
+            }
+        });
+
+        // Toggle detailed information
+        function toggleDetails(pbxId) {
+            const detailsDiv = document.getElementById(`details-${pbxId}`);
+            const toggleText = document.getElementById(`toggle-text-${pbxId}`);
+            
+            if (detailsDiv.classList.contains('hidden')) {
+                detailsDiv.classList.remove('hidden');
+                toggleText.textContent = '📋 Hide Details';
+            } else {
+                detailsDiv.classList.add('hidden');
+                toggleText.textContent = '📋 Show Details';
+            }
+        }
+
+        // Get extension status text
+        function getExtensionStatusText(ext) {
+            if (ext.online_status === 'online' || ext.presence_status === 'available' || ext.status === 1) {
+                return 'Online & Available';
+            } else if (ext.presence_status === 'busy' || ext.status === 'busy') {
+                return 'Online - Busy';
+            } else if (ext.presence_status === 'dnd') {
+                return 'Do Not Disturb';
+            } else if (ext.presence_status === 'away') {
+                return 'Away';
+            } else if (ext.online_status === 'offline' || ext.status === 0) {
+                return 'Offline';
+            } else {
+                return ext.presence_status || ext.online_status || ext.status || 'Unknown';
+            }
+        }
+
+        // Get extension status color
+        function getExtensionStatusColor(ext) {
+            const statusClass = getExtensionStatusClass(ext);
+            switch(statusClass) {
+                case 'status-online': return '#10b981';
+                case 'status-available': return '#f59e0b';
+                case 'status-offline': return '#ef4444';
+                default: return '#6b7280';
+            }
+        }
+
+        // Get trunk status text
+        function getTrunkStatusText(trunk) {
+            if (trunk.status === 1 || trunk.status === 'Active' || trunk.status === 'registered') {
+                return `Connected - ${trunk.username || trunk.host_port || 'Active'}`;
+            } else if (trunk.status === 'connecting' || trunk.status === 'registering') {
+                return 'Connecting...';
+            } else if (trunk.status === 0 || trunk.status === 'Inactive' || trunk.status === 'failed') {
+                return 'Disconnected';
+            } else {
+                return trunk.username || trunk.host_port || trunk.status || 'Unknown';
+            }
+        }
+
+        // Get trunk status color
+        function getTrunkStatusColor(trunk) {
+            const statusClass = getTrunkStatusClass(trunk);
+            switch(statusClass) {
+                case 'status-active': return '#10b981';
+                case 'status-available': return '#f59e0b';
+                case 'status-offline': return '#ef4444';
+                default: return '#6b7280';
+            }
+        }
+
+        function getExtensionStatusClass(ext) {
+            // Check various status indicators for extensions
+            if (ext.online_status === 'online' || 
+                ext.presence_status === 'available' || 
+                ext.status === 'registered' || 
+                ext.status === 1 ||
+                ext.status === 'online') {
+                return 'status-online';  // Green
+            } else if (ext.presence_status === 'busy' || 
+                       ext.presence_status === 'dnd' || 
+                       ext.presence_status === 'away' ||
+                       ext.status === 'busy') {
+                return 'status-available';  // Orange/Blue for busy states
+            } else if (ext.online_status === 'offline' || 
+                       ext.status === 'offline' || 
+                       ext.status === 0 ||
+                       ext.status === 'unregistered') {
+                return 'status-offline';  // Red
+            } else {
+                return 'status-inactive';  // Gray for unknown
+            }
+        }
+
+        // Get trunk status CSS class  
+        function getTrunkStatusClass(trunk) {
+            // Check various status indicators for trunks
+            if (trunk.status === 1 || 
+                trunk.status === 'Active' || 
+                trunk.status === 'active' ||
+                trunk.status === 'registered' ||
+                trunk.status === 'Registered' ||
+                trunk.status === 'connected') {
+                return 'status-active';  // Green
+            } else if (trunk.status === 'connecting' ||
+                       trunk.status === 'registering' ||
+                       trunk.status === 'trying') {
+                return 'status-available';  // Orange for transitional states
+            } else if (trunk.status === 0 ||
+                       trunk.status === 'Inactive' ||
+                       trunk.status === 'inactive' ||
+                       trunk.status === 'failed' ||
+                       trunk.status === 'unreachable') {
+                return 'status-offline';  // Red
+            } else {
+                return 'status-inactive';  // Gray for unknown
             }
         }
     </script>
