@@ -2,42 +2,19 @@ class AuthService {
   private baseUrl = '/api'
 
   async login(password: string): Promise<boolean> {
-    // Temporary fallback for when backend is not available
+    // Direct offline mode - bypass API completely for now
     if (password === 'Smart@2026!') {
-      console.log('✅ Offline login successful')
+      console.log('✅ Direct offline login successful')
       return true
     }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      })
-
-      const data = await response.json()
-      return data.success
-    } catch (error) {
-      console.error('Login error:', error)
-      // Fallback to offline mode
-      if (password === 'Smart@2026!') {
-        console.log('✅ Fallback offline login successful')
-        return true
-      }
-      return false
-    }
+    
+    console.log('❌ Invalid password')
+    return false
   }
 
   async checkAuth(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/health`)
-      return response.ok
-    } catch (error) {
-      // Allow offline mode
-      return true
-    }
+    // Always allow access in offline mode
+    return true
   }
 
   logout(): void {
