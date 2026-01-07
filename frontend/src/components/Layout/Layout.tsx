@@ -6,9 +6,11 @@ import MobileNav from './MobileNav'
 
 interface LayoutProps {
   children: React.ReactNode
+  currentPage?: string
+  onNavigate?: (page: string) => void
 }
 
-const Layout = ({ children }: LayoutProps) => {
+const Layout = ({ children, currentPage = 'dashboard', onNavigate }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -19,6 +21,8 @@ const Layout = ({ children }: LayoutProps) => {
         <Sidebar 
           collapsed={sidebarCollapsed} 
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          currentPage={currentPage}
+          onNavigate={onNavigate}
         />
       </div>
 
@@ -40,6 +44,11 @@ const Layout = ({ children }: LayoutProps) => {
               collapsed={false} 
               onToggleCollapse={() => {}}
               onClose={() => setSidebarOpen(false)}
+              currentPage={currentPage}
+              onNavigate={(page) => {
+                onNavigate?.(page)
+                setSidebarOpen(false)
+              }}
             />
           </motion.div>
         </div>
