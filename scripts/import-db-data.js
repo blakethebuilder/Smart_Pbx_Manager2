@@ -18,10 +18,26 @@ try {
         process.exit(0);
     }
     
-    // Check if export file exists
-    const exportFile = path.join(process.cwd(), 'data', 'pbx-export.json');
-    if (!fs.existsSync(exportFile)) {
-        console.log('📝 No export file found, database will start empty');
+    // Check multiple possible locations for export file
+    const possiblePaths = [
+        path.join(process.cwd(), 'data', 'pbx-export.json'),
+        path.join(process.cwd(), 'pbx-export.json'),
+        './data/pbx-export.json',
+        './pbx-export.json'
+    ];
+    
+    let exportFile = null;
+    for (const filePath of possiblePaths) {
+        if (fs.existsSync(filePath)) {
+            exportFile = filePath;
+            console.log(`📁 Found export file at: ${filePath}`);
+            break;
+        }
+    }
+    
+    if (!exportFile) {
+        console.log('📝 No export file found at any location, database will start empty');
+        console.log('🔍 Searched locations:', possiblePaths);
         process.exit(0);
     }
     
