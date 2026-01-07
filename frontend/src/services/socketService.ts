@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client'
 
 class SocketService {
   private socket: Socket | null = null
-  private listeners: Map<string, Function[]> = new Map()
+  private listeners: Map<string, ((...args: any[]) => void)[]> = new Map()
 
   connect(): void {
     if (this.socket?.connected) return
@@ -48,7 +48,7 @@ class SocketService {
 
     // Register with socket if connected
     if (this.socket) {
-      this.socket.on(event, callback as any)
+      this.socket.on(event, callback)
     }
   }
 
@@ -66,7 +66,7 @@ class SocketService {
     }
 
     if (this.socket) {
-      this.socket.off(event, callback as any)
+      this.socket.off(event, callback)
     }
   }
 
