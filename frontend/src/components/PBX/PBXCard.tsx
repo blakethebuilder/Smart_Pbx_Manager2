@@ -75,7 +75,14 @@ const PBXCard = ({ pbx, viewMode = 'grid' }: PBXCardProps) => {
             <div className={getStatusDotClass(pbx.status)} />
             
             <div>
-              <h3 className="text-lg font-semibold text-white">{pbx.name}</h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-semibold text-white">{pbx.name}</h3>
+                {pbx.appId === 'HOTLINK_PLACEHOLDER' && (
+                  <span className="px-2 py-1 bg-secondary-500/20 text-secondary-400 text-xs rounded-full">
+                    Hot Link
+                  </span>
+                )}
+              </div>
               <p className="text-slate-400 text-sm">{new URL(pbx.url).hostname}</p>
             </div>
 
@@ -171,17 +178,26 @@ const PBXCard = ({ pbx, viewMode = 'grid' }: PBXCardProps) => {
 
         {/* Status */}
         <div className="flex items-center justify-between">
-          <span className={cn(
-            "px-3 py-1 rounded-full text-sm font-medium",
-            pbx.status === 'healthy' && "bg-success-500/20 text-success-400",
-            pbx.status === 'error' && "bg-error-500/20 text-error-400",
-            pbx.status === 'unknown' && "bg-slate-500/20 text-slate-400"
-          )}>
-            {pbx.status === 'healthy' ? 'Connected' : 
-             pbx.status === 'error' ? 'Disconnected' : 'Unknown'}
-          </span>
+          <div className="flex items-center space-x-2">
+            <span className={cn(
+              "px-3 py-1 rounded-full text-sm font-medium",
+              pbx.status === 'healthy' && "bg-success-500/20 text-success-400",
+              pbx.status === 'error' && "bg-error-500/20 text-error-400",
+              pbx.status === 'unknown' && "bg-slate-500/20 text-slate-400"
+            )}>
+              {pbx.appId === 'HOTLINK_PLACEHOLDER' ? 'Hot Link' :
+               pbx.status === 'healthy' ? 'Connected' : 
+               pbx.status === 'error' ? 'Disconnected' : 'Unknown'}
+            </span>
+            
+            {pbx.appId === 'HOTLINK_PLACEHOLDER' && (
+              <span className="px-2 py-1 bg-secondary-500/20 text-secondary-400 text-xs rounded-full">
+                Quick Access
+              </span>
+            )}
+          </div>
 
-          {pbx.lastCheck && (
+          {pbx.lastCheck && pbx.appId !== 'HOTLINK_PLACEHOLDER' && (
             <span className="text-xs text-slate-500">
               {formatLastCheck(pbx.lastCheck)}
             </span>

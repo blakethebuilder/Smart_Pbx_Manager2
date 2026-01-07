@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Plus, 
   Search, 
-  Filter, 
   StickyNote, 
-  Clock, 
   User, 
   AlertTriangle,
   CheckCircle,
@@ -15,7 +13,7 @@ import {
   Save,
   X
 } from 'lucide-react'
-import { usePBXStore, TechNote } from '../stores/pbxStore'
+import { usePBXStore } from '../stores/pbxStore'
 import { formatLastCheck } from '../utils/formatters'
 
 const Notes = () => {

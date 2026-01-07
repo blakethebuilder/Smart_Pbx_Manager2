@@ -16,12 +16,7 @@ class AuthService {
         const data = await response.json()
         return data.success
       } else if (response.status === 502) {
-        console.warn('Backend unavailable (502), using offline fallback')
-        // Fallback to offline mode for 502 errors
-        if (password === 'Smart@2026!') {
-          console.log('✅ Offline fallback login successful')
-          return true
-        }
+        console.warn('Backend unavailable (502), backend offline')
         return false
       } else {
         throw new Error(`HTTP ${response.status}`)
@@ -36,13 +31,8 @@ class AuthService {
         console.warn('Received HTML instead of JSON (likely 502 error page), using offline fallback')
       }
       
-      // Fallback to offline mode for any error (network, 502, parsing, etc.)
-      if (password === 'Smart@2026!') {
-        console.log('✅ Offline fallback login successful')
-        return true
-      }
-      
-      console.log('❌ Invalid password')
+      // Network or parsing errors - backend unavailable
+      console.log('❌ Backend unavailable, login failed')
       return false
     }
   }

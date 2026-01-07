@@ -13,7 +13,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8547
-      - MASTER_PASSWORD=Smart@2026!
+      - MASTER_PASSWORD=${MASTER_PASSWORD:-CHANGE_ME_IN_PRODUCTION}
     volumes:
       - pbx_data:/app/data
       - pbx_logs:/app/logs

@@ -16,8 +16,8 @@ const Layout = ({ children, currentPage = 'dashboard', onNavigate }: LayoutProps
 
   return (
     <div className="min-h-screen bg-dark-900 flex">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      {/* Desktop Sidebar - Fixed Position */}
+      <div className="hidden lg:block fixed left-0 top-0 h-full z-30">
         <Sidebar 
           collapsed={sidebarCollapsed} 
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -56,10 +56,14 @@ const Layout = ({ children, currentPage = 'dashboard', onNavigate }: LayoutProps
 
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-0' : ''
-      }`}>
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-70'
+      }`} style={{ marginLeft: sidebarCollapsed ? '80px' : '280px' }}>
+        {/* Fixed Header */}
+        <div className="sticky top-0 z-20 bg-dark-900/95 backdrop-blur-sm border-b border-slate-700">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+        </div>
         
+        {/* Scrollable Main Content */}
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-7xl mx-auto">
             {children}

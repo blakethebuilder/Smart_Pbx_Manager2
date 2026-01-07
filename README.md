@@ -21,7 +21,7 @@ npm start
 ```
 
 Open http://localhost:8547
-Login with password: `Smart@2026!`
+Login with your configured password (set via MASTER_PASSWORD environment variable)
 
 ### Docker Deployment
 
@@ -126,7 +126,7 @@ cp pbx-import-template.csv my-pbx-list.csv
 
 ### Dashboard Access:
 - **Password Protection**: Configurable master password
-- **Environment Variable**: `MASTER_PASSWORD=Smart@2026!`
+- **Environment Variable**: `MASTER_PASSWORD=your_secure_password`
 - **Session Management**: Secure login handling
 
 ### API Security:
@@ -153,7 +153,7 @@ cp pbx-import-template.csv my-pbx-list.csv
 ### Environment Variables (.env):
 ```bash
 # Required
-MASTER_PASSWORD=Smart@2026!
+MASTER_PASSWORD=your_secure_password
 NODE_ENV=production
 PORT=8547
 

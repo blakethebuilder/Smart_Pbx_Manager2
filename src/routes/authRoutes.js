@@ -1,7 +1,14 @@
 import express from 'express';
 
 const router = express.Router();
-const DASHBOARD_PASSWORD = process.env.MASTER_PASSWORD || 'Smart@2026!';
+const DASHBOARD_PASSWORD = process.env.MASTER_PASSWORD;
+
+// Check if password is configured
+if (!DASHBOARD_PASSWORD || DASHBOARD_PASSWORD === 'CHANGE_ME_IN_PRODUCTION') {
+    console.error('❌ MASTER_PASSWORD environment variable not set or using default value!');
+    console.error('   Please set a secure password in your environment variables.');
+    process.exit(1);
+}
 
 // Login endpoint
 router.post('/login', (req, res) => {
