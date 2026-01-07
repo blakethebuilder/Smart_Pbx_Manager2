@@ -1,6 +1,4 @@
 class AuthService {
-  private baseUrl = '/api'
-
   async login(password: string): Promise<boolean> {
     // Direct offline mode - bypass API completely for now
     if (password === 'Smart@2026!') {
