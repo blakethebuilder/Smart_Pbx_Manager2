@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './stores/authStore'
 import { usePBXStore } from './stores/pbxStore'
 import { socketService } from './services/socketService'
-import { hotkeyService } from './services/hotkeyService'
 import LoginScreen from './components/Auth/LoginScreen'
 import Layout from './components/Layout/Layout'
 import Dashboard from './pages/Dashboard'
+import Notes from './pages/Notes'
 import PBXLoader from './components/PBX/PBXLoader'
 
 function App() {
@@ -30,44 +30,11 @@ function App() {
         setPBXInstances(data)
       })
 
-      // Setup global hotkeys
-      hotkeyService.register('escape', () => {
-        if (selectedPBX) {
-          selectPBX(null) // Close PBX Loader
-        }
-      })
-
-      hotkeyService.register('ctrl+d', () => {
-        setCurrentPage('dashboard')
-        if (selectedPBX) selectPBX(null)
-      })
-
-      hotkeyService.register('ctrl+p', () => {
-        setCurrentPage('pbx-instances')
-        if (selectedPBX) selectPBX(null)
-      })
-
-      hotkeyService.register('ctrl+m', () => {
-        setCurrentPage('monitoring')
-        if (selectedPBX) selectPBX(null)
-      })
-
-      hotkeyService.register('ctrl+n', () => {
-        setCurrentPage('notes')
-        if (selectedPBX) selectPBX(null)
-      })
-
-      hotkeyService.register('ctrl+,', () => {
-        setCurrentPage('settings')
-        if (selectedPBX) selectPBX(null)
-      })
-
       return () => {
         socketService.disconnect()
-        hotkeyService.clear()
       }
     }
-  }, [isAuthenticated, setPBXInstances, selectedPBX, selectPBX])
+  }, [isAuthenticated, setPBXInstances])
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page)
@@ -93,9 +60,6 @@ function App() {
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-white mb-4">Clients</h2>
             <p className="text-slate-400">Client management coming soon...</p>
-            <div className="mt-4 text-xs text-slate-500">
-              Hotkey: <kbd className="px-2 py-1 bg-slate-700 rounded">Ctrl+C</kbd>
-            </div>
           </div>
         )
       case 'monitoring':
@@ -103,29 +67,15 @@ function App() {
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-white mb-4">Monitoring</h2>
             <p className="text-slate-400">Advanced monitoring features coming soon...</p>
-            <div className="mt-4 text-xs text-slate-500">
-              Hotkey: <kbd className="px-2 py-1 bg-slate-700 rounded">Ctrl+M</kbd>
-            </div>
           </div>
         )
       case 'notes':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Tech Notes</h2>
-            <p className="text-slate-400">Centralized note management coming soon...</p>
-            <div className="mt-4 text-xs text-slate-500">
-              Hotkey: <kbd className="px-2 py-1 bg-slate-700 rounded">Ctrl+N</kbd>
-            </div>
-          </div>
-        )
+        return <Notes />
       case 'settings':
         return (
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-white mb-4">Settings</h2>
             <p className="text-slate-400">System settings coming soon...</p>
-            <div className="mt-4 text-xs text-slate-500">
-              Hotkey: <kbd className="px-2 py-1 bg-slate-700 rounded">Ctrl+,</kbd>
-            </div>
           </div>
         )
       default:
