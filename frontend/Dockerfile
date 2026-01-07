@@ -21,6 +21,9 @@ FROM nginx:alpine
 # Copy built app to nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Copy error page
+COPY public/50x.html /usr/share/nginx/html/
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
