@@ -139,28 +139,28 @@ const PBXCard = ({ pbx, viewMode = 'grid' }: PBXCardProps) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -2 }}
       onClick={handleCardClick}
-      className="card card-hover p-6 cursor-pointer relative overflow-hidden"
+      className="card card-hover p-4 cursor-pointer relative overflow-hidden"
     >
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-secondary-500/5" />
       
       {/* Content */}
-      <div className="relative space-y-4">
+      <div className="relative space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
             <div className={getStatusDotClass(pbx.status)} />
-            <div>
-              <h3 className="text-xl font-bold text-white">{pbx.name}</h3>
-              <p className="text-slate-400 text-sm">{new URL(pbx.url).hostname}</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-semibold text-white truncate">{pbx.name}</h3>
+              <p className="text-slate-400 text-xs truncate">{new URL(pbx.url).hostname}</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 flex-shrink-0">
             {hasNotes && (
-              <StickyNote className="w-4 h-4 text-warning-500" />
+              <StickyNote className="w-3 h-3 text-warning-500" />
             )}
             
             <button
@@ -168,46 +168,40 @@ const PBXCard = ({ pbx, viewMode = 'grid' }: PBXCardProps) => {
               className="p-1 text-slate-400 hover:text-warning-500 transition-colors"
             >
               {isFavorite ? (
-                <Heart className="w-4 h-4 fill-current text-warning-500" />
+                <Heart className="w-3 h-3 fill-current text-warning-500" />
               ) : (
-                <HeartOff className="w-4 h-4" />
+                <HeartOff className="w-3 h-3" />
               )}
             </button>
           </div>
         </div>
 
-        {/* Status */}
+        {/* Status & Type */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className={cn(
-              "px-3 py-1 rounded-full text-sm font-medium",
+              "px-2 py-1 rounded-full text-xs font-medium",
               pbx.status === 'healthy' && "bg-success-500/20 text-success-400",
               pbx.status === 'error' && "bg-error-500/20 text-error-400",
               pbx.status === 'unknown' && "bg-slate-500/20 text-slate-400"
             )}>
               {pbx.appId === 'HOTLINK_PLACEHOLDER' ? 'Hot Link' :
-               pbx.status === 'healthy' ? 'Connected' : 
-               pbx.status === 'error' ? 'Disconnected' : 'Unknown'}
+               pbx.status === 'healthy' ? 'Online' : 
+               pbx.status === 'error' ? 'Offline' : 'Unknown'}
             </span>
-            
-            {pbx.appId === 'HOTLINK_PLACEHOLDER' && (
-              <span className="px-2 py-1 bg-secondary-500/20 text-secondary-400 text-xs rounded-full">
-                Quick Access
-              </span>
-            )}
           </div>
 
           {pbx.lastCheck && pbx.appId !== 'HOTLINK_PLACEHOLDER' && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 truncate">
               {formatLastCheck(pbx.lastCheck)}
             </span>
           )}
         </div>
 
-        {/* Tags */}
+        {/* Tags - Show only first 2 */}
         {pbx.tags && pbx.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {pbx.tags.map(tag => (
+          <div className="flex flex-wrap gap-1">
+            {pbx.tags.slice(0, 2).map(tag => (
               <span 
                 key={tag}
                 className="px-2 py-1 bg-primary-500/20 text-primary-400 text-xs rounded-full"
@@ -215,41 +209,48 @@ const PBXCard = ({ pbx, viewMode = 'grid' }: PBXCardProps) => {
                 {tag}
               </span>
             ))}
+            {pbx.tags.length > 2 && (
+              <span className="px-2 py-1 bg-slate-500/20 text-slate-400 text-xs rounded-full">
+                +{pbx.tags.length - 2}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Error Message */}
+        {/* Error Message - Compact */}
         {pbx.status === 'error' && pbx.health?.error && (
-          <div className="p-3 bg-error-500/10 border border-error-500/20 rounded-lg">
-            <p className="text-error-400 text-sm">{pbx.health.error}</p>
+          <div className="p-2 bg-error-500/10 border border-error-500/20 rounded-lg">
+            <p className="text-error-400 text-xs truncate" title={pbx.health.error}>
+              {pbx.health.error}
+            </p>
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-2">
+        {/* Actions - Compact */}
+        <div className="flex items-center justify-between pt-1">
           <button
             onClick={handleOpenPBX}
-            className="btn-primary flex items-center space-x-2"
+            className="btn-primary btn-sm flex items-center space-x-1"
           >
-            <ExternalLink className="w-4 h-4" />
-            <span>Open PBX</span>
+            <ExternalLink className="w-3 h-3" />
+            <span className="text-xs">Open</span>
           </button>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <button
               onClick={handleTest}
-              className="btn-secondary p-2"
+              className="btn-secondary p-1.5"
               title="Test Connection"
             >
-              <Play className="w-4 h-4" />
+              <Play className="w-3 h-3" />
             </button>
             
             <button
               onClick={handleDelete}
-              className="btn-danger p-2"
+              className="btn-danger p-1.5"
               title="Delete PBX"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3 h-3" />
             </button>
           </div>
         </div>

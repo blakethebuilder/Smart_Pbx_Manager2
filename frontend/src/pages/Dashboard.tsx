@@ -70,7 +70,7 @@ const Dashboard = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* View Mode Toggle */}
+          {/* View Density Toggle */}
           <div className="flex bg-dark-800 rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
@@ -79,6 +79,7 @@ const Dashboard = () => {
                   ? 'bg-primary-500 text-white' 
                   : 'text-slate-400 hover:text-white'
               }`}
+              title="Grid View"
             >
               <Grid className="w-4 h-4" />
             </button>
@@ -89,6 +90,7 @@ const Dashboard = () => {
                   ? 'bg-primary-500 text-white' 
                   : 'text-slate-400 hover:text-white'
               }`}
+              title="List View"
             >
               <List className="w-4 h-4" />
             </button>
