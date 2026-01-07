@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  pbx-dashboard:
+  # Backend API Server
+  pbx-backend:
     build: .
     ports:
       - "8547:8547"
@@ -9,10 +10,8 @@ services:
       - NODE_ENV=production
       - PORT=8547
     volumes:
-      # Persist database and logs
       - pbx_data:/app/data
       - pbx_logs:/app/logs
-      # Optional: Mount config file
       - ./.env:/app/.env:ro
     restart: unless-stopped
     healthcheck:
@@ -21,6 +20,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # React Frontend
+  pbx-frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      - pbx-backend
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://pbx-backend:8547
 
 volumes:
   pbx_data:
