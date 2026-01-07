@@ -29,7 +29,8 @@ services:
     ports:
       - "3005:80"  # Changed to port 3005
     depends_on:
-      - pbx-backend
+      pbx-backend:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       - REACT_APP_API_URL=http://pbx-backend:8547
