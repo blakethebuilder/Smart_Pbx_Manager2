@@ -91,7 +91,15 @@ async function initializePBXData() {
         // Initialize database first
         dbOperations.init();
         
-        // Check if we need to migrate from JSON
+        // Import data from export file if database is empty
+        try {
+            const { execSync } = await import('child_process');
+            execSync('node scripts/import-db-data.js', { stdio: 'inherit' });
+        } catch (importError) {
+            console.log('📝 Database import completed or not needed');
+        }
+        
+        // Check if we need to migrate from JSON (legacy)
         const dataFile = 'pbx-data.json';
         if (fs.existsSync(dataFile)) {
             console.log('📦 Found existing pbx-data.json, migrating to database...');
