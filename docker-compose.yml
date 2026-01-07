@@ -27,7 +27,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3002:80"  # Changed external port to 3002
+      - "3005:80"  # Changed to port 3005
     depends_on:
       - pbx-backend
     restart: unless-stopped
