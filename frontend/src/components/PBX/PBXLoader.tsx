@@ -49,10 +49,6 @@ const PBXLoader = () => {
   const isFavorite = favorites.includes(selectedPBX.id)
   const systemInfo = selectedPBX.health?.systemInfo
 
-  const handleBack = () => {
-    selectPBX(null)
-  }
-
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'extensions', label: 'Extensions', icon: Users },
