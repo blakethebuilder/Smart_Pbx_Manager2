@@ -11,10 +11,6 @@ RUN npm install
 # Copy application files
 COPY . .
 
-# Copy local database to container (if it exists)
-# This will include your existing database with all PBX instances
-COPY data/ ./data/ 2>/dev/null || true
-
 # Create data directory for SQLite database
 RUN mkdir -p data logs
 
