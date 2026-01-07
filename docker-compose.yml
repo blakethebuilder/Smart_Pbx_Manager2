@@ -5,7 +5,7 @@ services:
   pbx-backend:
     build: .
     ports:
-      - "8547:8547"
+      - "8548:8547"  # Changed external port to 8548
     environment:
       - NODE_ENV=production
       - PORT=8547
@@ -27,7 +27,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3001:80"
+      - "3002:80"  # Changed external port to 3002
     depends_on:
       - pbx-backend
     restart: unless-stopped
