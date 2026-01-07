@@ -23,12 +23,12 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'dashboard', onNavigate }: SidebarProps) => {
   const menuItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard' },
-    { id: 'pbx-instances', icon: Server, label: 'PBX Instances' },
-    { id: 'clients', icon: Users, label: 'Clients' },
-    { id: 'monitoring', icon: Activity, label: 'Monitoring' },
-    { id: 'notes', icon: BookOpen, label: 'Notes' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'dashboard', icon: Home, label: 'Dashboard', hotkey: 'Ctrl+D' },
+    { id: 'pbx-instances', icon: Server, label: 'PBX Instances', hotkey: 'Ctrl+P' },
+    { id: 'clients', icon: Users, label: 'Clients', hotkey: 'Ctrl+C' },
+    { id: 'monitoring', icon: Activity, label: 'Monitoring', hotkey: 'Ctrl+M' },
+    { id: 'notes', icon: BookOpen, label: 'Notes', hotkey: 'Ctrl+N' },
+    { id: 'settings', icon: Settings, label: 'Settings', hotkey: 'Ctrl+,' },
   ]
 
   const handleNavigation = (pageId: string) => {
@@ -86,15 +86,22 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'dashboar
             transition={{ delay: index * 0.1 }}
             onClick={() => handleNavigation(item.id)}
             className={cn(
-              "w-full flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-200",
+              "w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-200 group",
               currentPage === item.id 
                 ? "bg-primary-500/20 text-primary-400 border border-primary-500/30" 
                 : "text-slate-400 hover:text-white hover:bg-slate-700/50"
             )}
           >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
+            <div className="flex items-center space-x-3">
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && (
+                <span className="font-medium truncate">{item.label}</span>
+              )}
+            </div>
             {!collapsed && (
-              <span className="font-medium truncate">{item.label}</span>
+              <kbd className="px-1.5 py-0.5 bg-slate-600 text-slate-300 text-xs rounded opacity-0 group-hover:opacity-60 transition-opacity">
+                {item.hotkey.replace('Ctrl', '⌘')}
+              </kbd>
             )}
           </motion.button>
         ))}
