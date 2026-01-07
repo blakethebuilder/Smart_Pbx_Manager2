@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   ArrowLeft, 
@@ -237,7 +237,7 @@ const PBXLoader = () => {
                 <div>
                   <p className="text-slate-400 text-sm">Extensions</p>
                   <p className="text-lg font-bold text-primary-400">
-                    {systemInfo.registeredExtensions || 0}/{systemInfo.extensions || 0}
+                    {(systemInfo as any).registeredExtensions || 0}/{systemInfo.extensions || 0}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
@@ -256,7 +256,7 @@ const PBXLoader = () => {
                 <div>
                   <p className="text-slate-400 text-sm">Trunks</p>
                   <p className="text-lg font-bold text-secondary-400">
-                    {systemInfo.activeTrunks || 0}/{systemInfo.trunks || 0}
+                    {(systemInfo as any).activeTrunks || 0}/{(systemInfo as any).trunks || 0}
                   </p>
                 </div>
                 <div className="w-10 h-10 bg-secondary-500/20 rounded-lg flex items-center justify-center">

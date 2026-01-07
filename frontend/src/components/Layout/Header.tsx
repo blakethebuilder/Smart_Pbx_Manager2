@@ -22,7 +22,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const { logout } = useAuthStore()
   const { searchQuery, setSearchQuery, pbxInstances } = usePBXStore()
-  const [lastUpdate, setLastUpdate] = useState(new Date())
+  const [lastUpdate] = useState(new Date())
 
   const connectedCount = pbxInstances.filter(pbx => pbx.status === 'healthy').length
   const totalCount = pbxInstances.length

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './stores/authStore'
 import { usePBXStore } from './stores/pbxStore'
@@ -23,7 +23,7 @@ function App() {
       socketService.connect()
       
       // Listen for PBX updates
-      socketService.on('pbx-update', (data) => {
+      socketService.on('pbx-update', (data: any) => {
         setPBXInstances(data)
       })
 

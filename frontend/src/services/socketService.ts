@@ -39,7 +39,7 @@ class SocketService {
     }
   }
 
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (...args: any[]) => void): void {
     // Store the listener for re-registration on reconnect
     if (!this.listeners.has(event)) {
       this.listeners.set(event, [])
@@ -52,7 +52,7 @@ class SocketService {
     }
   }
 
-  off(event: string, callback?: Function): void {
+  off(event: string, callback?: (...args: any[]) => void): void {
     if (callback) {
       const callbacks = this.listeners.get(event)
       if (callbacks) {

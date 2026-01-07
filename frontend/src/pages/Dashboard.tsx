@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Filter, Grid, List } from 'lucide-react'
+import { Plus, Grid, List } from 'lucide-react'
 import { usePBXStore } from '../stores/pbxStore'
 import { pbxService } from '../services/pbxService'
 import PBXGrid from '../components/PBX/PBXGrid'
@@ -13,7 +13,6 @@ const Dashboard = () => {
     pbxInstances, 
     selectedPBX, 
     searchQuery, 
-    favorites,
     setPBXInstances 
   } = usePBXStore()
   
