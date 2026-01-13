@@ -6,9 +6,10 @@ import { pbxService } from '../../services/pbxService'
 interface AddPBXModalProps {
   isOpen: boolean
   onClose: () => void
+  onSuccess?: () => void
 }
 
-const AddPBXModal = ({ isOpen, onClose }: AddPBXModalProps) => {
+const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     url: '',
@@ -35,6 +36,7 @@ const AddPBXModal = ({ isOpen, onClose }: AddPBXModalProps) => {
       }
       
       await pbxService.addPBX(submitData)
+      if (onSuccess) onSuccess()
       onClose()
       setFormData({ name: '', url: '', appId: '', appSecret: '', isShared: false })
       setPbxType('api')

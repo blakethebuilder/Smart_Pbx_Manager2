@@ -53,16 +53,21 @@ const Notes = () => {
     return matchesSearch && matchesPriority && matchesPBX
   })
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (newNote.content.trim() && newNote.pbxId) {
-      addNote(newNote.pbxId, {
-        content: newNote.content.trim(),
-        author: 'Tech User', // Could be from auth context
-        priority: newNote.priority
-      })
-      
-      setNewNote({ content: '', priority: 'medium', pbxId: '' })
-      setShowAddNote(false)
+      try {
+        await addNote(newNote.pbxId, {
+          content: newNote.content.trim(),
+          author: 'Tech User', // Could be from auth context
+          priority: newNote.priority
+        })
+        
+        setNewNote({ content: '', priority: 'medium', pbxId: '' })
+        setShowAddNote(false)
+      } catch (error) {
+        console.error('Failed to add note:', error)
+        // You could show an error toast here
+      }
     }
   }
 
@@ -71,17 +76,27 @@ const Notes = () => {
     setEditContent(content)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingNote && editContent.trim()) {
-      updateNote(editingNote.pbxId, editingNote.noteId, editContent.trim())
-      setEditingNote(null)
-      setEditContent('')
+      try {
+        await updateNote(editingNote.pbxId, editingNote.noteId, editContent.trim())
+        setEditingNote(null)
+        setEditContent('')
+      } catch (error) {
+        console.error('Failed to update note:', error)
+        // You could show an error toast here
+      }
     }
   }
 
-  const handleDeleteNote = (pbxId: string, noteId: string) => {
+  const handleDeleteNote = async (pbxId: string, noteId: string) => {
     if (confirm('Are you sure you want to delete this note?')) {
-      deleteNote(pbxId, noteId)
+      try {
+        await deleteNote(pbxId, noteId)
+      } catch (error) {
+        console.error('Failed to delete note:', error)
+        // You could show an error toast here
+      }
     }
   }
 
@@ -248,7 +263,7 @@ const Notes = () => {
                     {getPriorityIcon(note.priority)}
                     <span className="font-medium text-white">{note.pbxName}</span>
                     <span className="text-xs text-slate-500">
-                      {formatLastCheck(note.timestamp.toString())}
+                      {formatLastCheck(note.timestamp)}
                     </span>
                   </div>
                   

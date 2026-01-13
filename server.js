@@ -19,6 +19,7 @@ import { sharedPBXService } from './src/services/SharedPBXService.js';
 import authRoutes from './src/routes/authRoutes.js';
 import pbxRoutes from './src/routes/pbxRoutes.js';
 import systemRoutes from './src/routes/systemRoutes.js';
+import notesRoutes from './src/routes/notesRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -47,6 +48,7 @@ app.use(express.static('public'));
 // Routes
 app.use('/api', authRoutes);
 app.use('/api/pbx', pbxRoutes);
+app.use('/api/notes', notesRoutes);
 app.use('/', systemRoutes);
 
 // Make Socket.io available to routes

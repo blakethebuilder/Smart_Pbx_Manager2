@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { notesService, type TechNote } from '../services/notesService'
 
 export interface PBXInstance {
   id: string
@@ -24,14 +25,6 @@ export interface PBXInstance {
   isShared?: boolean
   tags?: string[]
   notes?: TechNote[]
-}
-
-export interface TechNote {
-  id: string
-  content: string
-  author: string
-  timestamp: Date
-  priority: 'low' | 'medium' | 'high'
 }
 
 interface PBXState {
@@ -100,54 +93,68 @@ export const usePBXStore = create<PBXState>()(
         set({ searchQuery: query })
       },
 
-      addNote: (pbxId, noteData) => {
-        set((state) => ({
-          pbxInstances: state.pbxInstances.map(pbx => 
-            pbx.id === pbxId 
-              ? {
-                  ...pbx,
-                  notes: [
-                    ...(pbx.notes || []),
-                    {
-                      ...noteData,
-                      id: Date.now().toString(),
-                      timestamp: new Date(),
-                    }
-                  ]
-                }
-              : pbx
-          )
-        }))
+      addNote: async (pbxId, noteData) => {
+        try {
+          const newNote = await notesService.createNote(pbxId, noteData)
+          
+          set((state) => ({
+            pbxInstances: state.pbxInstances.map(pbx => 
+              pbx.id === pbxId 
+                ? {
+                    ...pbx,
+                    notes: [...(pbx.notes || []), newNote]
+                  }
+                : pbx
+            )
+          }))
+        } catch (error) {
+          console.error('Failed to add note:', error)
+          throw error
+        }
       },
 
-      updateNote: (pbxId, noteId, content) => {
-        set((state) => ({
-          pbxInstances: state.pbxInstances.map(pbx => 
-            pbx.id === pbxId 
-              ? {
-                  ...pbx,
-                  notes: pbx.notes?.map(note => 
-                    note.id === noteId 
-                      ? { ...note, content }
-                      : note
-                  )
-                }
-              : pbx
-          )
-        }))
+      updateNote: async (pbxId, noteId, content) => {
+        try {
+          await notesService.updateNote(noteId, pbxId, content)
+          
+          set((state) => ({
+            pbxInstances: state.pbxInstances.map(pbx => 
+              pbx.id === pbxId 
+                ? {
+                    ...pbx,
+                    notes: pbx.notes?.map(note => 
+                      note.id === noteId 
+                        ? { ...note, content }
+                        : note
+                    )
+                  }
+                : pbx
+            )
+          }))
+        } catch (error) {
+          console.error('Failed to update note:', error)
+          throw error
+        }
       },
 
-      deleteNote: (pbxId, noteId) => {
-        set((state) => ({
-          pbxInstances: state.pbxInstances.map(pbx => 
-            pbx.id === pbxId 
-              ? {
-                  ...pbx,
-                  notes: pbx.notes?.filter(note => note.id !== noteId)
-                }
-              : pbx
-          )
-        }))
+      deleteNote: async (pbxId, noteId) => {
+        try {
+          await notesService.deleteNote(noteId, pbxId)
+          
+          set((state) => ({
+            pbxInstances: state.pbxInstances.map(pbx => 
+              pbx.id === pbxId 
+                ? {
+                    ...pbx,
+                    notes: pbx.notes?.filter(note => note.id !== noteId)
+                  }
+                : pbx
+            )
+          }))
+        } catch (error) {
+          console.error('Failed to delete note:', error)
+          throw error
+        }
       },
 
       addTag: (pbxId, tag) => {

@@ -21,19 +21,20 @@ const Dashboard = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'healthy' | 'error' | 'unknown'>('all')
   const [isLoading, setIsLoading] = useState(true)
 
+  const loadPBXInstances = async () => {
+    try {
+      setIsLoading(true)
+      const instances = await pbxService.getAllPBX()
+      setPBXInstances(instances)
+    } catch (error) {
+      console.error('Failed to load PBX instances:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Load PBX instances on mount
   useEffect(() => {
-    const loadPBXInstances = async () => {
-      try {
-        const instances = await pbxService.getAllPBX()
-        setPBXInstances(instances)
-      } catch (error) {
-        console.error('Failed to load PBX instances:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadPBXInstances()
   }, [setPBXInstances])
 
@@ -216,7 +217,8 @@ const Dashboard = () => {
       {/* Add PBX Modal */}
       <AddPBXModal 
         isOpen={showAddModal} 
-        onClose={() => setShowAddModal(false)} 
+        onClose={() => setShowAddModal(false)}
+        onSuccess={loadPBXInstances}
       />
     </div>
   )

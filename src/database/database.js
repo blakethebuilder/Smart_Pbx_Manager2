@@ -71,12 +71,28 @@ const initDatabase = () => {
         )
     `);
 
+    // Notes table
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS pbx_notes (
+            id TEXT PRIMARY KEY,
+            pbx_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            author TEXT NOT NULL,
+            priority TEXT DEFAULT 'medium',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pbx_id) REFERENCES pbx_instances (id) ON DELETE CASCADE
+        )
+    `);
+
     // Create indexes for better performance
     db.exec(`
         CREATE INDEX IF NOT EXISTS idx_pbx_status ON pbx_instances(status);
         CREATE INDEX IF NOT EXISTS idx_health_pbx_id ON health_history(pbx_id);
         CREATE INDEX IF NOT EXISTS idx_health_checked_at ON health_history(checked_at);
         CREATE INDEX IF NOT EXISTS idx_rate_limit_url ON api_rate_limits(pbx_url);
+        CREATE INDEX IF NOT EXISTS idx_notes_pbx_id ON pbx_notes(pbx_id);
+        CREATE INDEX IF NOT EXISTS idx_notes_created_at ON pbx_notes(created_at);
     `);
 
     // Initialize prepared statements after tables are created
@@ -150,6 +166,36 @@ const initDatabase = () => {
         cleanupOldRateLimits: db.prepare(`
             DELETE FROM api_rate_limits 
             WHERE window_start < datetime('now', '-1 hour')
+        `),
+
+        // Notes operations
+        insertNote: db.prepare(`
+            INSERT INTO pbx_notes (id, pbx_id, content, author, priority)
+            VALUES (?, ?, ?, ?, ?)
+        `),
+        
+        updateNote: db.prepare(`
+            UPDATE pbx_notes 
+            SET content = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND pbx_id = ?
+        `),
+        
+        deleteNote: db.prepare(`
+            DELETE FROM pbx_notes 
+            WHERE id = ? AND pbx_id = ?
+        `),
+        
+        getNotesByPBX: db.prepare(`
+            SELECT * FROM pbx_notes 
+            WHERE pbx_id = ? 
+            ORDER BY created_at DESC
+        `),
+        
+        getAllNotes: db.prepare(`
+            SELECT n.*, p.name as pbx_name 
+            FROM pbx_notes n 
+            JOIN pbx_instances p ON n.pbx_id = p.id 
+            ORDER BY n.created_at DESC
         `)
     };
 
@@ -236,6 +282,9 @@ export const dbOperations = {
                     pbx.health = {};
                 }
             }
+
+            // Add notes for this PBX
+            pbx.notes = dbOperations.getNotesByPBX(row.id);
             
             return pbx;
         });
@@ -290,6 +339,47 @@ export const dbOperations = {
         
         transaction(jsonData);
         console.log(`📦 Migrated ${jsonData.length} PBX instances to database`);
+    },
+
+    // Notes operations
+    createNote: (note) => {
+        return statements.insertNote.run(
+            note.id, note.pbxId, note.content, note.author, note.priority
+        );
+    },
+    
+    updateNote: (noteId, pbxId, content) => {
+        return statements.updateNote.run(content, noteId, pbxId);
+    },
+    
+    deleteNote: (noteId, pbxId) => {
+        return statements.deleteNote.run(noteId, pbxId);
+    },
+    
+    getNotesByPBX: (pbxId) => {
+        const rows = statements.getNotesByPBX.all(pbxId);
+        return rows.map(row => ({
+            id: row.id,
+            content: row.content,
+            author: row.author,
+            priority: row.priority,
+            timestamp: row.created_at,
+            updatedAt: row.updated_at
+        }));
+    },
+    
+    getAllNotes: () => {
+        const rows = statements.getAllNotes.all();
+        return rows.map(row => ({
+            id: row.id,
+            pbxId: row.pbx_id,
+            pbxName: row.pbx_name,
+            content: row.content,
+            author: row.author,
+            priority: row.priority,
+            timestamp: row.created_at,
+            updatedAt: row.updated_at
+        }));
     }
 };
 
