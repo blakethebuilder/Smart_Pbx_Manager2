@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './stores/authStore'
 import { usePBXStore } from './stores/pbxStore'
 import { socketService } from './services/socketService'
+import { systemService } from './services/systemService'
 import LoginScreen from './components/Auth/LoginScreen'
 import Layout from './components/Layout/Layout'
 import Dashboard from './pages/Dashboard'
@@ -11,7 +12,7 @@ import PBXLoader from './components/PBX/PBXLoader'
 
 function App() {
   const { isAuthenticated, checkAuth } = useAuthStore()
-  const { setPBXInstances, selectedPBX, selectPBX } = usePBXStore()
+  const { setPBXInstances, setMonitoringPaused, selectedPBX, selectPBX } = usePBXStore()
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState('dashboard')
 
@@ -24,6 +25,11 @@ function App() {
     if (isAuthenticated) {
       // Initialize socket connection
       socketService.connect()
+      
+      // Fetch initial monitoring status
+      systemService.getStatus().then(status => {
+        setMonitoringPaused(status.isPaused)
+      }).catch(console.error)
       
       // Listen for PBX updates
       socketService.on('pbx-update', (data: any) => {

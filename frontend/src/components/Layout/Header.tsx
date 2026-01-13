@@ -8,11 +8,14 @@ import {
   LogOut,
   Settings,
   Wifi,
-  WifiOff
+  WifiOff,
+  Pause,
+  Play
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { usePBXStore } from '../../stores/pbxStore'
 import { socketService } from '../../services/socketService'
+import { systemService } from '../../services/systemService'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -21,8 +24,9 @@ interface HeaderProps {
 const Header = ({ onMenuClick }: HeaderProps) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const { logout } = useAuthStore()
-  const { searchQuery, setSearchQuery, pbxInstances } = usePBXStore()
+  const { searchQuery, setSearchQuery, pbxInstances, isMonitoringPaused, setMonitoringPaused } = usePBXStore()
   const [lastUpdate] = useState(new Date())
+  const [isToggling, setIsToggling] = useState(false)
 
   const connectedCount = pbxInstances.filter(pbx => pbx.status === 'healthy').length
   const totalCount = pbxInstances.length
@@ -31,6 +35,24 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const handleLogout = () => {
     logout()
     setShowUserMenu(false)
+  }
+
+  const toggleMonitoring = async () => {
+    if (isToggling) return
+    setIsToggling(true)
+    try {
+      if (isMonitoringPaused) {
+        await systemService.resumeMonitoring()
+        setMonitoringPaused(false)
+      } else {
+        await systemService.pauseMonitoring()
+        setMonitoringPaused(true)
+      }
+    } catch (error) {
+      console.error('Failed to toggle monitoring:', error)
+    } finally {
+      setIsToggling(false)
+    }
   }
 
   return (
@@ -61,6 +83,30 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
         {/* Right Section */}
         <div className="flex items-center space-x-4">
+          {/* Pause/Resume Button */}
+          <button
+            onClick={toggleMonitoring}
+            disabled={isToggling}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
+              isMonitoringPaused 
+                ? 'bg-warning-500/20 text-warning-400 border border-warning-500/30 hover:bg-warning-500/30' 
+                : 'bg-dark-900 text-slate-400 hover:text-white border border-slate-700'
+            }`}
+            title={isMonitoringPaused ? 'Resume Monitoring' : 'Pause Monitoring'}
+          >
+            {isMonitoringPaused ? (
+              <>
+                <Play className="w-4 h-4 fill-current" />
+                <span className="text-sm font-medium">Resume</span>
+              </>
+            ) : (
+              <>
+                <Pause className="w-4 h-4 fill-current" />
+                <span className="text-sm font-medium">Pause</span>
+              </>
+            )}
+          </button>
+
           {/* Connection Status */}
           <div className="flex items-center space-x-2 px-3 py-2 bg-dark-900 rounded-lg">
             {isSocketConnected ? (

@@ -33,9 +33,11 @@ interface PBXState {
   favorites: string[]
   recentlyAccessed: string[]
   searchQuery: string
+  isMonitoringPaused: boolean
   
   // Actions
   setPBXInstances: (instances: PBXInstance[]) => void
+  setMonitoringPaused: (isPaused: boolean) => void
   selectPBX: (pbx: PBXInstance | null) => void
   addToFavorites: (pbxId: string) => void
   removeFromFavorites: (pbxId: string) => void
@@ -56,9 +58,14 @@ export const usePBXStore = create<PBXState>()(
       favorites: [],
       recentlyAccessed: [],
       searchQuery: '',
+      isMonitoringPaused: false,
 
       setPBXInstances: (instances) => {
         set({ pbxInstances: instances })
+      },
+
+      setMonitoringPaused: (isPaused) => {
+        set({ isMonitoringPaused: isPaused })
       },
 
       selectPBX: (pbx) => {

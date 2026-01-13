@@ -14,6 +14,7 @@ import { migrateToDatabase } from './scripts/migrate-to-database.js';
 import { healthCheckService } from './src/services/HealthCheckService.js';
 import { tokenService } from './src/services/TokenService.js';
 import { sharedPBXService } from './src/services/SharedPBXService.js';
+import { systemStatusService } from './src/services/SystemStatusService.js';
 
 // Import routes
 import authRoutes from './src/routes/authRoutes.js';
@@ -49,7 +50,8 @@ app.use(express.static('public'));
 app.use('/api', authRoutes);
 app.use('/api/pbx', pbxRoutes);
 app.use('/api/notes', notesRoutes);
-app.use('/', systemRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/', systemRoutes); // Keep for legacy /health and /test if needed
 
 // Make Socket.io available to routes
 app.set('io', io);
@@ -117,6 +119,12 @@ async function initializePBXData() {
 
 // Health check scheduler
 async function runHealthChecks() {
+    // Check if monitoring is paused
+    if (systemStatusService.getStatus().isPaused) {
+        console.log('⏸️ Health checks skipped - Monitoring is PAUSED');
+        return;
+    }
+
     try {
         const pbxInstances = dbOperations.getAllPBX();
         

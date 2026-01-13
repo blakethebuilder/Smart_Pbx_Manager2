@@ -5,6 +5,7 @@ import { dbOperations } from '../database/database.js';
 import { rateLimitService } from '../services/RateLimitService.js';
 import { tokenService } from '../services/TokenService.js';
 import { sharedPBXService } from '../services/SharedPBXService.js';
+import { systemStatusService } from '../services/SystemStatusService.js';
 
 const router = express.Router();
 
@@ -12,9 +13,25 @@ const router = express.Router();
 router.get('/health', (req, res) => {
     res.json({ 
         status: 'healthy',
+        monitoring: systemStatusService.getStatus(),
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
+});
+
+// Monitoring control
+router.post('/monitoring/pause', (req, res) => {
+    systemStatusService.pauseMonitoring();
+    res.json({ success: true, status: systemStatusService.getStatus() });
+});
+
+router.post('/monitoring/resume', (req, res) => {
+    systemStatusService.resumeMonitoring();
+    res.json({ success: true, status: systemStatusService.getStatus() });
+});
+
+router.get('/monitoring/status', (req, res) => {
+    res.json(systemStatusService.getStatus());
 });
 
 // Test endpoint

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List } from 'lucide-react'
+import { Plus, Grid, List, AlertTriangle } from 'lucide-react'
 import { usePBXStore } from '../stores/pbxStore'
 import { pbxService } from '../services/pbxService'
 import PBXGrid from '../components/PBX/PBXGrid'
@@ -13,6 +13,7 @@ const Dashboard = () => {
     pbxInstances, 
     selectedPBX, 
     searchQuery, 
+    isMonitoringPaused,
     setPBXInstances 
   } = usePBXStore()
   
@@ -61,6 +62,23 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Monitoring Paused Warning */}
+      {isMonitoringPaused && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-warning-500/10 border border-warning-500/20 rounded-xl p-4 flex items-center space-x-3"
+        >
+          <div className="bg-warning-500/20 p-2 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-warning-400" />
+          </div>
+          <div>
+            <h3 className="text-warning-400 font-semibold text-sm">Monitoring Paused</h3>
+            <p className="text-warning-300/70 text-xs">All automated API health checks are currently disabled. Data may be outdated.</p>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

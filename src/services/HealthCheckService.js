@@ -3,6 +3,7 @@ import { tokenService } from './TokenService.js';
 import { rateLimitService } from './RateLimitService.js';
 import { sharedPBXService } from './SharedPBXService.js';
 import { dbOperations } from '../database/database.js';
+import { systemStatusService } from './SystemStatusService.js';
 
 class HealthCheckService {
     constructor() {
@@ -13,6 +14,16 @@ class HealthCheckService {
      * Check health of a single PBX instance
      */
     async checkPBXHealth(pbx) {
+        // Check if monitoring is paused
+        if (systemStatusService.getStatus().isPaused) {
+            console.log(`⏸️ Monitoring is PAUSED, skipping check for ${pbx.name}`);
+            return pbx.health || { 
+                status: 'pending', 
+                message: 'Monitoring is currently paused',
+                lastCheck: new Date().toISOString()
+            };
+        }
+
         // Prevent duplicate health checks for the same PBX
         if (this.healthCheckInProgress.has(pbx.id)) {
             console.log(`⏸️ Health check already in progress for ${pbx.name}`);
