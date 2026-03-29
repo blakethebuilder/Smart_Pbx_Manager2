@@ -6,6 +6,7 @@ import PBXGrid from '../components/PBX/PBXGrid'
 import PBXQuickAccess from '../components/PBX/PBXQuickAccess'
 import AddPBXModal from '../components/PBX/AddPBXModal'
 import AnnouncementBox from '../components/AnnouncementBox'
+import QuickNoteModal from '../components/QuickNoteModal'
 
 const Dashboard = () => {
   const { 
@@ -68,7 +69,7 @@ const Dashboard = () => {
     }
 
     const preview = lines.map(line => {
-      const [name, url] = line.split(/[,	]/).map(v => v.trim())
+      const [name, url] = line.split(/[,\\t]/).map(v => v.trim())
       return { name, url }
     }).filter(item => item.name && item.url)
 
@@ -116,7 +117,19 @@ const Dashboard = () => {
   
   const handleQuickNote = (pbxId: string) => {
     setQuickNotePbxId(pbxId)
-    alert(\`Quick Note feature triggered for PBX ID: \${pbxId}. (Implementation for the quick note modal/state update is pending connection to the main Notes system).\`)
+    setQuickNoteModalOpen(true)
+  }
+  
+  const handlePostQuickNote = async (content: string) => {
+    if (!content.trim() || !quickNotePbxId) return
+    try {
+      await addNote(quickNotePbxId, { content: content.trim(), author: 'Tech', priority: 'medium' })
+      loadPBXInstances()
+      setQuickNoteModalOpen(false)
+      setQuickNotePbxId(null)
+    } catch (e) {
+      alert('Failed to add quick note.')
+    }
   }
 
   return (
@@ -130,9 +143,9 @@ const Dashboard = () => {
         <div className="flex items-center space-x-3">
           <div className="flex bg-dark-800 rounded-lg p-1">
             <button onClick={() => setViewMode('grid')}
-              className={\`p-2 rounded-md transition-colors \${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><Grid className="w-4 h-4" /></button>
+              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><Grid className="w-4 h-4" /></button>
             <button onClick={() => setViewMode('list')}
-              className={\`p-2 rounded-md transition-colors \${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><List className="w-4 h-4" /></button>
+              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><List className="w-4 h-4" /></button>
           </div>
           <button onClick={() => setShowImportModal(true)} className="btn-secondary flex items-center space-x-2">
             <FileUp className="w-4 h-4" />
@@ -218,6 +231,15 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {quickNoteModalOpen && quickNotePbxId && (
+        <QuickNoteModal
+          pbxId={quickNotePbxId}
+          isOpen={quickNoteModalOpen}
+          onClose={() => setQuickNoteModalOpen(false)}
+          onSubmit={handlePostQuickNote}
+        />
       )}
     </div>
   )
