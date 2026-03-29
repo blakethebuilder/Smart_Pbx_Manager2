@@ -34,7 +34,6 @@ const Dashboard = () => {
     }
   }
 
-  // Load PBX instances on mount
   useEffect(() => {
     loadPBXInstances()
   }, [setPBXInstances])
@@ -158,8 +157,10 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Quick Access */}
+      {/* Announcements */}
       <AnnouncementBox />
+
+      {/* Quick Access */}
       <PBXQuickAccess />
 
       {/* PBX Grid */}

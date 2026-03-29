@@ -124,8 +124,101 @@ const initDatabase = () => {
             VALUES (?, ?, ?, ?, ?, ?)
         `),
         
-        // ... (other statements)
+        updatePBX: db.prepare(`
+            UPDATE pbx_instances 
+            SET name = ?, url = ?, app_id = ?, app_secret = ?, is_shared = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `),
         
+        updatePBXHealth: db.prepare(`
+            UPDATE pbx_instances 
+            SET status = ?, last_check = CURRENT_TIMESTAMP, health_data = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `),
+        
+        deletePBX: db.prepare(`DELETE FROM pbx_instances WHERE id = ?`),
+        
+        getPBXById: db.prepare(`SELECT * FROM pbx_instances WHERE id = ?`),
+        
+        getAllPBX: db.prepare(`SELECT * FROM pbx_instances ORDER BY name`),
+        
+        // Health history
+        insertHealthCheck: db.prepare(`
+            INSERT INTO health_history (pbx_id, status, response_time, error_message, extensions_count, trunks_count)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `),
+        
+        getHealthHistory: db.prepare(`
+            SELECT * FROM health_history 
+            WHERE pbx_id = ? 
+            ORDER BY checked_at DESC 
+            LIMIT ?
+        `),
+        
+        // Rate limiting
+        upsertRateLimit: db.prepare(`
+            INSERT INTO api_rate_limits (pbx_url, api_calls, window_start)
+            VALUES (?, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT(pbx_url) DO UPDATE SET
+                api_calls = CASE 
+                    WHEN datetime('now', '-30 minutes') > window_start 
+                    THEN 1 
+                    ELSE api_calls + 1 
+                END,
+                window_start = CASE 
+                    WHEN datetime('now', '-30 minutes') > window_start 
+                    THEN CURRENT_TIMESTAMP 
+                    ELSE window_start 
+                END
+        `),
+        
+        getRateLimit: db.prepare(`
+            SELECT api_calls, window_start 
+            FROM api_rate_limits 
+            WHERE pbx_url = ? AND datetime('now', '-30 minutes') <= window_start
+        `),
+        
+        // Cleanup old data
+        cleanupOldHealthHistory: db.prepare(`
+            DELETE FROM health_history 
+            WHERE checked_at < datetime('now', '-30 days')
+        `),
+        
+        cleanupOldRateLimits: db.prepare(`
+            DELETE FROM api_rate_limits 
+            WHERE window_start < datetime('now', '-1 hour')
+        `),
+
+        // Notes operations
+        insertNote: db.prepare(`
+            INSERT INTO pbx_notes (id, pbx_id, content, author, priority)
+            VALUES (?, ?, ?, ?, ?)
+        `),
+        
+        updateNote: db.prepare(`
+            UPDATE pbx_notes 
+            SET content = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND pbx_id = ?
+        `),
+        
+        deleteNote: db.prepare(`
+            DELETE FROM pbx_notes 
+            WHERE id = ? AND pbx_id = ?
+        `),
+        
+        getNotesByPBX: db.prepare(`
+            SELECT * FROM pbx_notes 
+            WHERE pbx_id = ? 
+            ORDER BY created_at DESC
+        `),
+        
+        getAllNotes: db.prepare(`
+            SELECT n.*, p.name as pbx_name 
+            FROM pbx_notes n 
+            JOIN pbx_instances p ON n.pbx_id = p.id 
+            ORDER BY n.created_at DESC
+        `),
+
         // Announcements
         insertAnnouncement: db.prepare(`INSERT INTO announcements (id, content, author, pinned) VALUES (?, ?, ?, ?)`),
         deleteAnnouncement: db.prepare(`DELETE FROM announcements WHERE id = ?`),
@@ -140,9 +233,6 @@ const initDatabase = () => {
 
     // Create default admin
     statements.insertUser.run('admin-id-1', 'blakeAdmin', 'admin');
-
-    console.log('✅ Database initialized successfully');
-};
 
     console.log('✅ Database initialized successfully');
 };
