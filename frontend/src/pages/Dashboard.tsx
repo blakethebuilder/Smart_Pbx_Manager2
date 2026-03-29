@@ -22,6 +22,8 @@ const Dashboard = () => {
   const [csvData, setCsvData] = useState('')
   const [importResults, setImportResults] = useState<{name: string, url: string}[]>([])
   const [importError, setImportError] = useState<string | null>(null)
+  const [quickNoteModalOpen, setQuickNoteModalOpen] = useState(false)
+  const [quickNotePbxId, setQuickNotePbxId] = useState<string | null>(null)
 
   const loadPBXInstances = async () => {
     try {
@@ -37,7 +39,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadPBXInstances()
-  }, [])
+  }, [setPBXInstances])
 
   const filteredInstances = pbxInstances.filter(pbx =>
     pbx.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,7 +61,7 @@ const Dashboard = () => {
 
   const handlePreviewImport = () => {
     setImportError(null)
-    const lines = csvData.trim().split('\n').filter(l => l.trim() !== '')
+    const lines = csvData.trim().split('\\n').filter(l => l.trim() !== '')
     if (lines.length === 0) {
       setImportError('No data found to preview.')
       return
@@ -111,28 +113,32 @@ const Dashboard = () => {
       setIsLoading(false)
     }
   }
+  
+  const handleQuickNote = (pbxId: string) => {
+    setQuickNotePbxId(pbxId)
+    alert(\`Quick Note feature triggered for PBX ID: \${pbxId}. (Implementation for the quick note modal/state update is pending connection to the main Notes system).\`)
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">PBX Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white">Home</h1>
           <p className="text-slate-400 mt-1">Manage your client PBX hotlinks</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex bg-dark-800 rounded-lg p-1">
             <button onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><Grid className="w-4 h-4" /></button>
+              className={\`p-2 rounded-md transition-colors \${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><Grid className="w-4 h-4" /></button>
             <button onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><List className="w-4 h-4" /></button>
+              className={\`p-2 rounded-md transition-colors \${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><List className="w-4 h-4" /></button>
           </div>
           <button onClick={() => setShowImportModal(true)} className="btn-secondary flex items-center space-x-2">
             <FileUp className="w-4 h-4" />
-            <span>Import</span>
+            <span>Import CSV</span>
           </button>
-          <button onClick={handleDeduplicate} className="btn-secondary bg-slate-700 hover:bg-slate-600 flex items-center space-x-2">
-            <span>Deduplicate</span>
-          </button>
+          <button onClick={handleDeduplicate} className="btn-secondary bg-slate-700 hover:bg-slate-600">Deduplicate</button>
           <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center space-x-2">
             <Plus className="w-4 h-4" />
             <span>Add Hotlink</span>
@@ -140,6 +146,7 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-4">
           <p className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Total Links</p>
@@ -165,10 +172,18 @@ const Dashboard = () => {
       {isLoading ? (
         <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div></div>
       ) : (
-        <PBXGrid instances={filteredInstances} viewMode={viewMode} />
+        <PBXGrid 
+          instances={filteredInstances} 
+          viewMode={viewMode} 
+          onQuickNote={(id) => handleQuickNote(id)}
+        />
       )}
 
-      <AddPBXModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSuccess={loadPBXInstances} />
+      <AddPBXModal 
+        isOpen={showAddModal} 
+        onClose={() => setShowAddModal(false)}
+        onSuccess={loadPBXInstances}
+      />
 
       {showImportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -196,8 +211,7 @@ const Dashboard = () => {
               )}
             </div>
             <div className="flex justify-end space-x-3 p-6 border-t border-slate-700 bg-dark-900/50">
-              <button onClick={() => setShowImportModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handlePreviewImport} className="btn-secondary bg-slate-700 hover:bg-slate-600">Preview</button>
+              <button onClick={handlePreviewImport} className="btn-secondary">Preview</button>
               <button onClick={handleBulkImport} disabled={isLoading || importResults.length === 0} className="btn-primary min-w-[120px]">
                 {isLoading ? 'Importing...' : 'Confirm Import'}
               </button>

@@ -73,4 +73,33 @@ router.delete('/users/:id', (req, res) => {
     }
 });
 
+// Admin: Create a new user
+router.post('/users', (req, res) => {
+    const { username } = req.body;
+    if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+
+    try {
+        const existing = dbOperations.getUserByUsername(username);
+        if (existing) {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+
+        const newUser = {
+            id: Date.now().toString(),
+            username: username.trim(),
+            role: 'tech',
+        };
+
+        dbOperations.createUser(newUser.id, newUser.username, newUser.role);
+        console.log(`👤 New tech created by admin: ${newUser.username}`);
+        res.status(201).json({ success: true, user: newUser });
+
+    } catch (error) {
+        console.error('❌ Failed to create user:', error.message);
+        res.status(500).json({ error: 'Failed to create user' });
+    }
+});
+
 export default router;

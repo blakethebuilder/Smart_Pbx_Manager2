@@ -1,5 +1,8 @@
+import { useState } from 'react'
+import { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Star, Clock, Tag } from 'lucide-react'
+import { Star, Clock, Tag, Search } from 'lucide-react'
 import { usePBXStore } from '../../stores/pbxStore'
 
 const PBXQuickAccess = () => {
@@ -9,8 +12,14 @@ const PBXQuickAccess = () => {
     recentlyAccessed, 
     selectPBX 
   } = usePBXStore()
+  
+  const [quickSearch, setQuickSearch] = useState('')
 
-  const favoriteInstances = pbxInstances.filter(pbx => favorites.includes(pbx.id))
+  const favoriteInstances = pbxInstances.filter(pbx => favorites.includes(pbx.id) && (
+    pbx.name.toLowerCase().includes(quickSearch.toLowerCase()) ||
+    pbx.url.toLowerCase().includes(quickSearch.toLowerCase())
+  ))
+  
   const recentInstances = recentlyAccessed
     .map(id => pbxInstances.find(pbx => pbx.id === id))
     .filter(Boolean)
@@ -20,7 +29,7 @@ const PBXQuickAccess = () => {
     new Set(pbxInstances.flatMap(pbx => pbx.tags || []))
   ).slice(0, 8)
 
-  if (favoriteInstances.length === 0 && recentInstances.length === 0 && allTags.length === 0) {
+  if (favoriteInstances.length === 0 && recentInstances.length === 0 && allTags.length === 0 && quickSearch.length === 0) {
     return null
   }
 
@@ -31,6 +40,18 @@ const PBXQuickAccess = () => {
       className="card p-6 space-y-6"
     >
       <h2 className="text-lg font-semibold text-white">Quick Access</h2>
+      
+      {/* Quick Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          value={quickSearch}
+          onChange={(e) => setQuickSearch(e.target.value)}
+          placeholder="Search favorites/recents..."
+          className="w-full pl-10 pr-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500 transition-colors"
+        />
+      </div>
 
       <div className="space-y-4">
         {/* Favorites */}

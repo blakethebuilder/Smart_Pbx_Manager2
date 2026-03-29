@@ -21,18 +21,17 @@ interface SidebarProps {
   onNavigate?: (page: string) => void
 }
 
-const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'dashboard', onNavigate }: SidebarProps) => {
+const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', onNavigate }: SidebarProps) => {
   const { role } = useAuthStore()
 
   const menuItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard' },
-    { id: 'pbx-instances', icon: Server, label: 'PBX Instances' },
-    { id: 'clients', icon: Users, label: 'Clients' },
-    { id: 'monitoring', icon: Activity, label: 'Monitoring' },
-    { id: 'notes', icon: BookOpen, label: 'Notes' },
+    { id: 'home', icon: Home, label: 'Home' },
+    { id: 'notes', icon: BookOpen, label: 'All Notes' },
     ...(role === 'admin' ? [{ id: 'user-management', icon: Users, label: 'Technicians' }] : []),
     { id: 'settings', icon: Settings, label: 'Settings' },
   ]
+
+  const handleNavigation = (pageId: string) => {
 
   const handleNavigation = (pageId: string) => {
     if (onNavigate) {

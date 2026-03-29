@@ -26,11 +26,26 @@ function App() {
     }
   }, [isAuthenticated, setPBXInstances])
 
-  const handleNavigation = (page: string) => {
+const handleNavigation = (page: string) => {
     setCurrentPage(page)
+    // Clear selected PBX if navigating away from Notes (where we view details)
     if (selectedPBX && page !== 'notes') {
       selectPBX(null)
     }
+  }
+
+  const renderCurrentPage = () => {
+    if (selectedPBX) {
+      return <Notes selectedPBXId={selectedPBX.id} />
+    }
+
+    switch (currentPage) {
+      case 'home': return <Dashboard />
+      case 'notes': return <Notes />
+      case 'user-management': return <UserManagement />
+      default: return <Dashboard />
+    }
+  }
   }
 
   const renderCurrentPage = () => {
