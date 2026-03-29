@@ -61,6 +61,21 @@ const Dashboard = () => {
     return <PBXLoader />
   }
 
+  const handlePreviewImport = () => {
+    const csvInput = document.getElementById('csvInput') as HTMLTextAreaElement;
+    if (!csvInput) return;
+
+    // Logic to parse and preview CSV data...
+    alert('Previewing data - implementation pending.')
+  };
+
+  const handleBulkImport = async () => {
+    const csvInput = document.getElementById('csvInput') as HTMLTextAreaElement;
+    if (!csvInput) return;
+    // Logic to parse CSV and call the service...
+    alert('Importing data - implementation pending.')
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
