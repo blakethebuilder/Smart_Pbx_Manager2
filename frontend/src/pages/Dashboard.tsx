@@ -13,7 +13,8 @@ const Dashboard = () => {
     pbxInstances, 
     searchQuery,
     favorites,
-    setPBXInstances 
+    setPBXInstances,
+    addNote 
   } = usePBXStore()
   
   const [showAddModal, setShowAddModal] = useState(false)
@@ -188,7 +189,7 @@ const Dashboard = () => {
         <PBXGrid 
           instances={filteredInstances} 
           viewMode={viewMode} 
-          onQuickNote={(id) => handleQuickNote(id)}
+          onQuickNote={(id: string) => handleQuickNote(id)}
         />
       )}
 

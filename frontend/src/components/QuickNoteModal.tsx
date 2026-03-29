@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Plus } from 'lucide-react'
-import { useAuthStore } from '../stores/authStore'
+import { X, Plus, Loader } from 'lucide-react'
 
 interface QuickNoteModalProps {
   pbxId: string

@@ -1,14 +1,12 @@
 import { motion } from 'framer-motion'
 import { 
   Home, 
-  Server, 
   Users, 
   Settings, 
   ChevronLeft, 
   ChevronRight,
   X,
   Shield,
-  Activity,
   BookOpen
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'

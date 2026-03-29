@@ -5,9 +5,10 @@ import PBXCard from './PBXCard'
 interface PBXGridProps {
   instances: PBXInstance[]
   viewMode: 'grid' | 'list'
+  onQuickNote: (id: string) => void
 }
 
-const PBXGrid = ({ instances, viewMode }: PBXGridProps) => {
+const PBXGrid = ({ instances, viewMode, onQuickNote }: PBXGridProps) => {
   if (instances.length === 0) {
     return (
       <motion.div
@@ -44,7 +45,7 @@ const PBXGrid = ({ instances, viewMode }: PBXGridProps) => {
             exit={{ opacity: 0, y: -20 }}
             transition={{ delay: index * 0.1 }}
           >
-            <PBXCard pbx={pbx} viewMode={viewMode} />
+            <PBXCard pbx={pbx} viewMode={viewMode} onQuickNote={onQuickNote} />
           </motion.div>
         ))}
       </AnimatePresence>
