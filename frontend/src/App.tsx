@@ -9,23 +9,17 @@ import Layout from './components/Layout/Layout'
 import Dashboard from './pages/Dashboard'
 import Notes from './pages/Notes'
 import UserManagement from './pages/UserManagement'
-import PBXLoader from './components/PBX/PBXLoader'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
-  const { setPBXInstances, setMonitoringPaused, selectedPBX, selectPBX } = usePBXStore()
-  const [isLoading] = useState(false)
+  const { setPBXInstances, selectedPBX, selectPBX } = usePBXStore()
+  const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState('dashboard')
 
   useEffect(() => {
     if (isAuthenticated) {
       // Initialize socket connection
       socketService.connect()
-      
-      // Fetch initial monitoring status
-      systemService.getStatus().then(status => {
-        setMonitoringPaused(status.isPaused)
-      }).catch(console.error)
       
       // Listen for PBX updates
       socketService.on('pbx-update', (data: any) => {
@@ -35,6 +29,57 @@ function App() {
       return () => {
         socketService.disconnect()
       }
+    }
+  }, [isAuthenticated, setPBXInstances])
+
+  const handleNavigation = (page: string) => {
+    setCurrentPage(page)
+    // Clear selected PBX when navigating away from Notes/Global view
+    if (selectedPBX && page !== 'notes') {
+      selectPBX(null)
+    }
+  }
+
+  const renderCurrentPage = () => {
+    // If a PBX is selected, we navigate to the Notes page to view/add notes for it
+    if (selectedPBX) {
+      return <Notes selectedPBXId={selectedPBX.id} />
+    }
+
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'pbx-instances':
+        return <Dashboard /> // For now, same as dashboard
+      case 'clients':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Clients</h2>
+            <p className="text-slate-400">Client management coming soon...</p>
+          </div>
+        )
+      case 'monitoring':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Monitoring</h2>
+            <p className="text-slate-400">Advanced monitoring features coming soon...</p>
+          </div>
+        )
+      case 'notes':
+        return <Notes />
+      case 'user-management':
+        return <UserManagement />
+      case 'settings':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Settings</h2>
+            <p className="text-slate-400">System settings coming soon...</p>
+          </div>
+        )
+      default:
+        return <Dashboard />
+    }
+  }
     }
   }, [isAuthenticated, setPBXInstances])
 

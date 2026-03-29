@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Menu, Search, User, LogOut } from 'lucide-react'
+import { Menu, User, LogOut } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { usePBXStore } from '../../stores/pbxStore'
 
@@ -11,7 +10,7 @@ interface HeaderProps {
 const Header = ({ onMenuClick }: HeaderProps) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const { logout, techName } = useAuthStore()
-  const { searchQuery, setSearchQuery, pbxInstances } = usePBXStore()
+  const { pbxInstances } = usePBXStore()
 
   const totalCount = pbxInstances.length
 
@@ -22,21 +21,10 @@ const Header = ({ onMenuClick }: HeaderProps) => {
           <button onClick={onMenuClick} className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
             <Menu className="w-5 h-5" />
           </button>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search clients..."
-              className="pl-10 pr-4 py-2 w-64 bg-dark-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
-            />
-          </div>
+          <div className="text-sm text-slate-400 hidden md:block">{totalCount} Hotlinks Active</div>
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-slate-400">{totalCount} clients</div>
-
           <div className="relative">
             <button onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center space-x-2 p-2 text-slate-400 hover:text-white transition-colors">
@@ -54,7 +42,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
               >
                 <div className="p-3 border-b border-slate-700">
                   <p className="text-sm font-medium text-white">{techName}</p>
-                  <p className="text-xs text-slate-400">MSP Technician</p>
+                  <p className="text-xs text-slate-400">{techName === 'blakeAdmin' ? 'Super Administrator' : 'Technician'}</p>
                 </div>
                 <div className="p-2">
                   <button onClick={() => { logout(); setShowUserMenu(false) }}

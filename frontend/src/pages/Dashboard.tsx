@@ -6,13 +6,11 @@ import { pbxService } from '../services/pbxService'
 import PBXGrid from '../components/PBX/PBXGrid'
 import PBXQuickAccess from '../components/PBX/PBXQuickAccess'
 import AddPBXModal from '../components/PBX/AddPBXModal'
-import PBXLoader from '../components/PBX/PBXLoader'
 import AnnouncementBox from '../components/AnnouncementBox'
 
 const Dashboard = () => {
   const { 
     pbxInstances, 
-    selectedPBX, 
     searchQuery,
     favorites,
     setPBXInstances 
@@ -57,24 +55,110 @@ const Dashboard = () => {
     }).length
   }
 
-  if (selectedPBX) {
-    return <PBXLoader />
-  }
-
+  // --- Import Handlers (Must be defined outside return block) ---
   const handlePreviewImport = () => {
-    const csvInput = document.getElementById('csvInput') as HTMLTextAreaElement;
-    if (!csvInput) return;
+    const csvData = (document.getElementById('csvInput') as HTMLTextAreaElement).value;
+    const previewDiv = document.getElementById('importPreviewContent');
+    const previewArea = document.getElementById('importPreviewArea');
+    const errorDiv = document.getElementById('importError');
 
-    // Logic to parse and preview CSV data...
-    alert('Previewing data - implementation pending.')
+    errorDiv.classList.add('hidden');
+    previewArea.classList.remove('hidden');
+
+    const lines = csvData.trim().split('\\n').filter(line => line.trim() !== '');
+    if (lines.length === 0) {
+        previewDiv.innerHTML = '<div class="text-red-400">No data found to preview.</div>';
+        return;
+    }
+    
+    const headers = lines[0].toLowerCase().includes('name') ? lines[0].split(/[,\\t]/).map(h => h.trim()) : ['name', 'url', 'appId', 'appSecret', 'isShared'];
+
+    const previewHtml = lines.slice(1).map((line, index) => {
+        const values = line.split(/[,\\t]/).map(v => v.trim());
+        
+        if (values.length !== headers.length) {
+            return \`<div class="text-red-400">Line \${index + 2} (Skipped): Column mismatch (\${values.length} cols found).</div>\`;
+        }
+
+        const pbx = {};
+        headers.forEach((header, i) => {
+            let value = values[i];
+            if (header === 'isshared' && value !== undefined) {
+                pbx[header] = value.toLowerCase() === 'true' || value === '1';
+            } else if (value) {
+                pbx[header] = value;
+            }
+        });
+
+        return \`
+            <div class="border-b border-dark-800 py-1">
+                <span class="font-bold text-white">\${index + 1}.</span> \${pbx.name || '[No Name]'} (\${pbx.url || 'No URL'})
+            </div>
+        \`;
+    }).join('');
+
+    previewDiv.innerHTML = previewHtml;
   };
 
   const handleBulkImport = async () => {
-    const csvInput = document.getElementById('csvInput') as HTMLTextAreaElement;
-    if (!csvInput) return;
-    // Logic to parse CSV and call the service...
-    alert('Importing data - implementation pending.')
+    const csvData = (document.getElementById('csvInput') as HTMLTextAreaElement).value;
+    const errorDiv = document.getElementById('importError');
+    const btn = (document.querySelector('.fixed.inset-0.z-50 .btn-primary') as HTMLButtonElement);
+    
+    if (!csvData.trim()) {
+        errorDiv.textContent = 'CSV data cannot be empty.';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+
+    setIsLoading(true);
+    if (btn) btn.disabled = true;
+    errorDiv.classList.add('hidden');
+
+    const lines = csvData.trim().split('\\n').filter(line => line.trim() !== '');
+    if (lines.length <= 1) {
+        errorDiv.textContent = 'No actual data rows found after header.';
+        errorDiv.classList.remove('hidden');
+        setIsLoading(false);
+        if (btn) btn.disabled = false;
+        return;
+    }
+
+    const headers = lines[0].split(/[,\\t]/).map(h => h.trim().toLowerCase());
+    
+    const instancesToImport = lines.slice(1).map(line => {
+        const values = line.split(/[,\\t]/).map(v => v.trim());
+        const pbx = {};
+        headers.forEach((header, i) => {
+            let value = values[i];
+            if (header === 'isshared' && value !== undefined) {
+                pbx[header] = value.toLowerCase() === 'true' || value === '1';
+            } else if (value) {
+                pbx[header] = value;
+            }
+        });
+        return pbx;
+    });
+
+    try {
+        const res = await pbxService.bulkImport(instancesToImport);
+        
+        if (res.success) {
+            alert(\`Import successful! Created: \${res.created}, Updated: \${res.updated}\`);
+            loadPBXInstances(); // Reload data
+            setShowImportModal(false);
+        } else {
+            throw new Error(\`Import failed: \${res.errors.length} errors.\`);
+        }
+    } catch (err) {
+        errorDiv.textContent = err instanceof Error ? err.message : 'An unknown error occurred during import.';
+        errorDiv.classList.remove('hidden');
+    } finally {
+        setIsLoading(false);
+        if (btn) btn.disabled = false;
+    }
   };
+  // --- End Import Modal Logic Placeholder ---
 
   return (
     <div className="space-y-6">
@@ -82,7 +166,7 @@ const Dashboard = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">PBX Dashboard</h1>
-          <p className="text-slate-400 mt-1">Manage your client PBX instances</p>
+          <p className="text-slate-400 mt-1">Manage your client PBX hotlinks & notes</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex bg-dark-800 rounded-lg p-1">
@@ -103,7 +187,7 @@ const Dashboard = () => {
             className="btn-primary flex items-center space-x-2"
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Plus className="w-4 h-4" />
-            <span>Add PBX</span>
+            <span>Add Hotlink</span>
           </motion.button>
         </div>
       </div>
@@ -118,7 +202,7 @@ const Dashboard = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm">Total PBX</p>
+              <p className="text-slate-400 text-sm">Total Hotlinks</p>
               <p className="text-2xl font-bold text-white">{stats.total}</p>
             </div>
             <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">

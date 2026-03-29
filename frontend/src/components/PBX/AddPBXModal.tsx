@@ -31,9 +31,6 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
       await pbxService.addPBX({
         name: name.trim(),
         url: url.trim().replace(/\/login\/?$/, ''),
-        appId: 'HOTLINK_PLACEHOLDER',
-        appSecret: 'HOTLINK_PLACEHOLDER',
-        isShared: false,
       })
       if (onSuccess) onSuccess()
       handleClose()
@@ -130,3 +127,4 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
 }
 
 export default AddPBXModal
+

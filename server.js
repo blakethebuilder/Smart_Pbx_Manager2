@@ -10,16 +10,10 @@ import dotenv from 'dotenv';
 
 // Import services
 import { dbOperations } from './src/database/database.js';
-import { migrateToDatabase } from './scripts/migrate-to-database.js';
-import { healthCheckService } from './src/services/HealthCheckService.js';
-import { tokenService } from './src/services/TokenService.js';
-import { sharedPBXService } from './src/services/SharedPBXService.js';
-import { systemStatusService } from './src/services/SystemStatusService.js';
 
 // Import routes
 import authRoutes from './src/routes/authRoutes.js';
 import pbxRoutes from './src/routes/pbxRoutes.js';
-import systemRoutes from './src/routes/systemRoutes.js';
 import notesRoutes from './src/routes/notesRoutes.js';
 import announcementsRoutes from './src/routes/announcementsRoutes.js';
 import pbxImportRoutes from './src/routes/pbxImportRoutes.js';
@@ -53,9 +47,7 @@ app.use('/api', authRoutes);
 app.use('/api/pbx', pbxRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/announcements', announcementsRoutes);
-app.use('/api/system', systemRoutes);
 app.use('/api/import', pbxImportRoutes);
-app.use('/', systemRoutes);
 
 // Make Socket.io available to routes
 app.set('io', io);
@@ -67,17 +59,7 @@ io.on('connection', (socket) => {
     // Send current PBX data to new client
     try {
         const pbxInstances = dbOperations.getAllPBX();
-        socket.emit('pbx-update', pbxInstances.map(pbx => ({
-            id: pbx.id,
-            name: pbx.name,
-            url: pbx.url,
-            appId: pbx.appId,
-            appSecret: pbx.appSecret,
-            status: pbx.status,
-            lastCheck: pbx.last_check,
-            health: pbx.health,
-            isShared: pbx.isShared
-        })));
+        socket.emit('pbx-update', pbxInstances);
     } catch (error) {
         console.error('❌ Failed to send initial data to client:', error.message);
     }
@@ -96,94 +78,12 @@ app.use((error, req, res, next) => {
 // Initialize database and migrate from JSON if needed
 async function initializePBXData() {
     try {
-        // Initialize database first
         dbOperations.init();
-        
-        // Import data from export file if database is empty
-        try {
-            const { execSync } = await import('child_process');
-            execSync('node scripts/import-db-data.js', { stdio: 'inherit' });
-        } catch (importError) {
-            console.log('📝 Database import completed or not needed');
-        }
-        
-        // Check if we need to migrate from JSON (legacy)
-        const dataFile = 'pbx-data.json';
-        if (fs.existsSync(dataFile)) {
-            console.log('📦 Found existing pbx-data.json, migrating to database...');
-            await migrateToDatabase();
-        }
-        
-        console.log('✅ PBX data initialization completed');
-        
+        console.log('✅ Database initialized successfully.');
     } catch (error) {
-        console.error('❌ Failed to initialize PBX data:', error.message);
+        console.error('❌ Failed to initialize database:', error.message);
     }
 }
-
-// Health check scheduler
-async function runHealthChecks() {
-    // Check if monitoring is paused
-    if (systemStatusService.getStatus().isPaused) {
-        console.log('⏸️ Health checks skipped - Monitoring is PAUSED');
-        return;
-    }
-
-    try {
-        const pbxInstances = dbOperations.getAllPBX();
-        
-        if (pbxInstances.length === 0) {
-            console.log('📊 No PBX instances to check');
-            return;
-        }
-
-        console.log(`📊 Starting health check for ${pbxInstances.length} PBX instances...`);
-        
-        // Run optimized health checks
-        await healthCheckService.checkAllPBX(pbxInstances);
-        
-        // Broadcast updated data to all connected clients
-        const updatedInstances = dbOperations.getAllPBX();
-        io.emit('pbx-update', updatedInstances.map(pbx => ({
-            id: pbx.id,
-            name: pbx.name,
-            url: pbx.url,
-            appId: pbx.appId,
-            appSecret: pbx.appSecret,
-            status: pbx.status,
-            lastCheck: pbx.last_check,
-            health: pbx.health,
-            isShared: pbx.isShared
-        })));
-        
-        console.log('📡 Broadcasted update to all clients');
-        
-    } catch (error) {
-        console.error('❌ Health check failed:', error.message);
-    }
-}
-
-// Maintenance tasks
-function runMaintenance() {
-    console.log('🧹 Running maintenance tasks...');
-    
-    // Clean up database
-    dbOperations.cleanup();
-    
-    // Clean up service caches
-    tokenService.cleanupExpiredTokens();
-    sharedPBXService.cleanupCache();
-    
-    console.log('✅ Maintenance completed');
-}
-
-// Cron jobs
-cron.schedule('0 * * * *', runHealthChecks);    // Every 60 minutes (hourly)
-cron.schedule('0 2 * * *', runMaintenance);     // Daily at 2 AM
-cron.schedule('0 */6 * * *', () => {            // Every 6 hours
-    tokenService.cleanupExpiredTokens();
-    sharedPBXService.cleanupCache();
-});
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -204,23 +104,17 @@ process.on('SIGINT', () => {
 
 // Start server with database initialization
 server.listen(PORT, async () => {
-    console.log(`\n🚀 MSP PBX Dashboard - PRODUCTION VERSION v2.0`);
+    console.log(`\n🚀 MSP Link Manager - v3.0 (Simplified)`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`📊 Dashboard:  http://localhost:${PORT}`);
-    console.log(`🔌 Socket.io:  Connected`);
-    console.log(`🗄️ Database:   SQLite (better-sqlite3)`);
-    console.log(`🔄 Health Check: Every 60 minutes (optimized for shared servers)`);
-    console.log(`⏱️ Rate Limiting: Max 6 API calls per 30 minutes per hostname`);
-    console.log(`🏢 Shared Server: Optimized API calls for shared PBX instances`);
+    console.log(`✓ Dashboard:  http://localhost:${PORT}`);
+    console.log(`✓ Socket.io:  Connected`);
+    console.log(`✓ Database:   SQLite`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
     
-    // Initialize database and load PBX data
+    // Initialize database
     await initializePBXData();
     
-    // Initial health check after 2 minutes
-    setTimeout(runHealthChecks, 120000);
-    
-    console.log('🎯 Server ready and monitoring PBX instances');
+    console.log('🎯 Server ready.');
 });
 
 export { io };

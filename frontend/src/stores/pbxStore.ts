@@ -3,51 +3,32 @@ import { persist } from 'zustand/middleware'
 import { notesService, type TechNote } from '../services/notesService'
 
 export interface PBXInstance {
-  id: string
-  name: string
-  url: string
-  appId: string
-  appSecret: string
-  status: 'healthy' | 'error' | 'unknown'
-  lastCheck: string | null
-  health?: {
-    status: string
-    connected: boolean
-    systemInfo?: {
-      extensions: number
-      activeCalls: number
-      uptime: string
-      version: string
-    }
-    error?: string
-    apiType?: string
-  }
-  isShared?: boolean
-  tags?: string[]
-  notes?: TechNote[]
+  id: string;
+  name: string;
+  url: string;
+  tags?: string[];
+  notes?: TechNote[];
 }
 
 interface PBXState {
-  pbxInstances: PBXInstance[]
-  selectedPBX: PBXInstance | null
-  favorites: string[]
-  recentlyAccessed: string[]
-  searchQuery: string
-  isMonitoringPaused: boolean
+  pbxInstances: PBXInstance[];
+  selectedPBX: PBXInstance | null;
+  favorites: string[];
+  recentlyAccessed: string[];
+  searchQuery: string;
   
   // Actions
-  setPBXInstances: (instances: PBXInstance[]) => void
-  setMonitoringPaused: (isPaused: boolean) => void
-  selectPBX: (pbx: PBXInstance | null) => void
-  addToFavorites: (pbxId: string) => void
-  removeFromFavorites: (pbxId: string) => void
-  addToRecentlyAccessed: (pbxId: string) => void
-  setSearchQuery: (query: string) => void
-  addNote: (pbxId: string, note: Omit<TechNote, 'id' | 'timestamp'>) => void
-  updateNote: (pbxId: string, noteId: string, content: string) => void
-  deleteNote: (pbxId: string, noteId: string) => void
-  addTag: (pbxId: string, tag: string) => void
-  removeTag: (pbxId: string, tag: string) => void
+  setPBXInstances: (instances: PBXInstance[]) => void;
+  selectPBX: (pbx: PBXInstance | null) => void;
+  addToFavorites: (pbxId: string) => void;
+  removeFromFavorites: (pbxId: string) => void;
+  addToRecentlyAccessed: (pbxId: string) => void;
+  setSearchQuery: (query: string) => void;
+  addNote: (pbxId: string, note: Omit<TechNote, 'id' | 'timestamp'>) => void;
+  updateNote: (pbxId: string, noteId: string, content: string) => void;
+  deleteNote: (pbxId: string, noteId: string) => void;
+  addTag: (pbxId: string, tag: string) => void;
+  removeTag: (pbxId: string, tag: string) => void;
 }
 
 export const usePBXStore = create<PBXState>()(
@@ -58,14 +39,9 @@ export const usePBXStore = create<PBXState>()(
       favorites: [],
       recentlyAccessed: [],
       searchQuery: '',
-      isMonitoringPaused: false,
 
       setPBXInstances: (instances) => {
         set({ pbxInstances: instances })
-      },
-
-      setMonitoringPaused: (isPaused) => {
-        set({ isMonitoringPaused: isPaused })
       },
 
       selectPBX: (pbx) => {
