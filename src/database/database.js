@@ -235,6 +235,19 @@ export const dbOperations = {
     deleteUser: (id) => {
         return statements.deleteUser.run(id);
     },
+
+    // Deduplication
+    deduplicatePBX: () => {
+        const result = db.exec(`
+            DELETE FROM pbx_instances 
+            WHERE rowid NOT IN (
+                SELECT MIN(rowid) 
+                FROM pbx_instances 
+                GROUP BY url
+            )
+        `);
+        return result;
+    },
 };
 
 // Export database instance for advanced operations

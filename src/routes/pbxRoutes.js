@@ -93,4 +93,17 @@ router.post('/bulk-import', (req, res) => {
     }
 });
 
+// Deduplicate PBX instances
+router.post('/deduplicate', (req, res) => {
+    try {
+        dbOperations.deduplicatePBX();
+        const updatedInstances = dbOperations.getAllPBX();
+        req.app.get('io').emit('pbx-update', updatedInstances);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Deduplication failed:', error.message);
+        res.status(500).json({ error: 'Deduplication failed' });
+    }
+});
+
 export default router;

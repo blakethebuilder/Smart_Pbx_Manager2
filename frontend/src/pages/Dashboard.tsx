@@ -94,6 +94,24 @@ const Dashboard = () => {
     }
   }
 
+  const handleDeduplicate = async () => {
+    if (!confirm('Are you sure you want to remove duplicate PBX links based on their URL?')) return
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/pbx/deduplicate', { method: 'POST' })
+      if (response.ok) {
+        alert('Deduplication successful!')
+        await loadPBXInstances()
+      } else {
+        throw new Error('Failed to deduplicate')
+      }
+    } catch (error) {
+      alert('Error during deduplication: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -111,6 +129,9 @@ const Dashboard = () => {
           <button onClick={() => setShowImportModal(true)} className="btn-secondary flex items-center space-x-2">
             <FileUp className="w-4 h-4" />
             <span>Import</span>
+          </button>
+          <button onClick={handleDeduplicate} className="btn-secondary bg-slate-700 hover:bg-slate-600 flex items-center space-x-2">
+            <span>Deduplicate</span>
           </button>
           <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center space-x-2">
             <Plus className="w-4 h-4" />
