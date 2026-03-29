@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List } from 'lucide-react'
+import { Plus, Grid, List, FileUp } from 'lucide-react'
 import { usePBXStore } from '../stores/pbxStore'
 import { pbxService } from '../services/pbxService'
 import PBXGrid from '../components/PBX/PBXGrid'
@@ -19,6 +19,7 @@ const Dashboard = () => {
   } = usePBXStore()
   
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [isLoading, setIsLoading] = useState(true)
 
@@ -59,136 +60,107 @@ const Dashboard = () => {
   if (selectedPBX) {
     return <PBXLoader />
   }
+  
+const handlePreviewImport = () => {
+    const csvData = (document.getElementById('csvInput') as HTMLTextAreaElement).value;
+    const previewDiv = document.getElementById('importPreviewContent');
+    const previewArea = document.getElementById('importPreviewArea');
+    const errorDiv = document.getElementById('importError');
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white">PBX Dashboard</h1>
-          <p className="text-slate-400 mt-1">Manage your client PBX instances</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <div className="flex bg-dark-800 rounded-lg p-1">
-            <button onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}
-              title="Grid View"><Grid className="w-4 h-4" /></button>
-            <button onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}
-              title="List View"><List className="w-4 h-4" /></button>
-          </div>
-          <motion.button onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center space-x-2"
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Plus className="w-4 h-4" />
-            <span>Add PBX</span>
-          </motion.button>
-        </div>
-      </div>
+    errorDiv.classList.add('hidden');
+    previewArea.classList.remove('hidden');
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Total PBX</p>
-              <p className="text-2xl font-bold text-white">{stats.total}</p>
+    const lines = csvData.trim().split('\\n').filter(line => line.trim() !== '');
+    if (lines.length === 0) {
+        previewDiv.innerHTML = '<div class="text-red-400">No data found to preview.</div>';
+        return;
+    }
+    
+    const headers = lines[0].toLowerCase().includes('name') ? lines[0].split(/[,\\t]/).map(h => h.trim()) : ['name', 'url', 'appId', 'appSecret', 'isShared'];
+
+    const previewHtml = lines.slice(1).map((line, index) => {
+        const values = line.split(/[,\\t]/).map(v => v.trim());
+        
+        if (values.length !== headers.length) {
+            return \`<div class="text-red-400">Line \${index + 2} (Skipped): Column mismatch (\${values.length} cols found).</div>\`;
+        }
+
+        const pbx = {};
+        headers.forEach((header, i) => {
+            let value = values[i];
+            if (header === 'isshared' && value !== undefined) {
+                pbx[header] = value.toLowerCase() === 'true' || value === '1';
+            } else if (value) {
+                pbx[header] = value;
+            }
+        });
+
+        return \`
+            <div class="border-b border-dark-800 py-1">
+                <span class="font-bold text-white">\${index + 1}.</span> \${pbx.name || '[No Name]'} (\${pbx.url || 'No URL'})
             </div>
-            <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
-              <Grid className="w-5 h-5 text-primary-400" />
-            </div>
-          </div>
-        </motion.div>
+        \`;
+    }).join('');
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Favorites</p>
-              <p className="text-2xl font-bold text-warning-500">{stats.favorites}</p>
-            </div>
-            <div className="w-10 h-10 bg-warning-500/20 rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-warning-400" />
-            </div>
-          </div>
-        </motion.div>
+    previewDiv.innerHTML = previewHtml;
+  };
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Tech Notes</p>
-              <p className="text-2xl font-bold text-success-500">{stats.notes}</p>
-            </div>
-            <div className="w-10 h-10 bg-success-500/20 rounded-lg flex items-center justify-center">
-              <Grid className="w-5 h-5 text-success-400" />
-            </div>
-          </div>
-        </motion.div>
+  const handleBulkImport = async () => {
+    const csvData = (document.getElementById('csvInput') as HTMLTextAreaElement).value;
+    const errorDiv = document.getElementById('importError');
+    // Find button within the modal context
+    const btn = (document.querySelector('.fixed.inset-0.z-50 .btn-primary') as HTMLButtonElement);
+    
+    if (!csvData.trim()) {
+        errorDiv.textContent = 'CSV data cannot be empty.';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Recent Activity</p>
-              <p className="text-2xl font-bold text-secondary-500">{stats.recent}</p>
-            </div>
-            <div className="w-10 h-10 bg-secondary-500/20 rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-secondary-400" />
-            </div>
-          </div>
-        </motion.div>
-      </div>
+    setIsLoading(true);
+    btn.disabled = true;
+    errorDiv.classList.add('hidden');
 
-      {/* Announcements */}
-      <AnnouncementBox />
+    const lines = csvData.trim().split('\\n').filter(line => line.trim() !== '');
+    if (lines.length <= 1) {
+        errorDiv.textContent = 'No actual data rows found after header.';
+        errorDiv.classList.remove('hidden');
+        setIsLoading(false);
+        btn.disabled = false;
+        return;
+    }
 
-      {/* Quick Access */}
-      <PBXQuickAccess />
+    const headers = lines[0].split(/[,\\t]/).map(h => h.trim().toLowerCase());
+    
+    const instancesToImport = lines.slice(1).map(line => {
+        const values = line.split(/[,\\t]/).map(v => v.trim());
+        const pbx = {};
+        headers.forEach((header, i) => {
+            let value = values[i];
+            if (header === 'isshared' && value !== undefined) {
+                pbx[header] = value.toLowerCase() === 'true' || value === '1';
+            } else if (value) {
+                pbx[header] = value;
+            }
+        });
+        return pbx;
+    });
 
-      {/* PBX Grid */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-          </div>
-        ) : (
-          <PBXGrid 
-            instances={filteredInstances} 
-            viewMode={viewMode}
-          />
-        )}
-      </motion.div>
-
-      {/* Add PBX Modal */}
-      <AddPBXModal 
-        isOpen={showAddModal} 
-        onClose={() => setShowAddModal(false)}
-        onSuccess={loadPBXInstances}
-      />
-    </div>
-  )
-}
-
-export default Dashboard
+    try {
+        const res = await pbxService.bulkImport(instancesToImport);
+        
+        if (res.success) {
+            alert(\`Import successful! Created: \${res.created}, Updated: \${res.updated}\`);
+            loadPBXInstances(); // Reload data
+            setShowImportModal(false);
+        } else {
+            throw new Error(\`Import failed: \${res.errors.length} errors.\`);
+        }
+    } catch (err) {
+        errorDiv.textContent = err instanceof Error ? err.message : 'An unknown error occurred during import.';
+        errorDiv.classList.remove('hidden');
+    } finally {
+        setIsLoading(false);
+        btn.disabled = false;
+    }
+  };

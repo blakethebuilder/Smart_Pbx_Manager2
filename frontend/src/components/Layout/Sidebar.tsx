@@ -11,8 +11,6 @@ import {
   Activity,
   BookOpen
 } from 'lucide-react'
-import { cn } from '../../utils/cn'
-
 import { useAuthStore } from '../../stores/authStore'
 
 interface SidebarProps {
