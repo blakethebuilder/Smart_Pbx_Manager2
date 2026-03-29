@@ -79,6 +79,7 @@ class PBXService {
     url: string
     appId: string
     appSecret: string
+    isShared?: boolean
   }): Promise<PBXInstance> {
     try {
       const response = await fetch(this.baseUrl, {
