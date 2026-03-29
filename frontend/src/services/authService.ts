@@ -1,23 +1,22 @@
 class AuthService {
   private baseUrl = '/api'
 
-  async login(password: string): Promise<boolean> {
+  async login(password: string, techName: string): Promise<any> {
     try {
       const response = await fetch(`${this.baseUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, techName }),
       })
 
       // If we get a response, try to parse it
       if (response.ok) {
-        const data = await response.json()
-        return data.success
+        return await response.json()
       } else if (response.status === 502) {
         console.warn('Backend unavailable (502), backend offline')
-        return false
+        return { success: false, error: 'Backend unavailable' }
       } else {
         throw new Error(`HTTP ${response.status}`)
       }

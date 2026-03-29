@@ -85,6 +85,26 @@ const initDatabase = () => {
         )
     `);
 
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS announcements (
+            id TEXT PRIMARY KEY,
+            content TEXT NOT NULL,
+            author TEXT NOT NULL,
+            pinned INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Users table for multi-tech support and admin
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            role TEXT DEFAULT 'tech', -- 'admin' or 'tech'
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
     // Create indexes for better performance
     db.exec(`
         CREATE INDEX IF NOT EXISTS idx_pbx_status ON pbx_instances(status);
@@ -93,6 +113,7 @@ const initDatabase = () => {
         CREATE INDEX IF NOT EXISTS idx_rate_limit_url ON api_rate_limits(pbx_url);
         CREATE INDEX IF NOT EXISTS idx_notes_pbx_id ON pbx_notes(pbx_id);
         CREATE INDEX IF NOT EXISTS idx_notes_created_at ON pbx_notes(created_at);
+        CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
     `);
 
     // Initialize prepared statements after tables are created
@@ -103,101 +124,25 @@ const initDatabase = () => {
             VALUES (?, ?, ?, ?, ?, ?)
         `),
         
-        updatePBX: db.prepare(`
-            UPDATE pbx_instances 
-            SET name = ?, url = ?, app_id = ?, app_secret = ?, is_shared = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `),
+        // ... (other statements)
         
-        updatePBXHealth: db.prepare(`
-            UPDATE pbx_instances 
-            SET status = ?, last_check = CURRENT_TIMESTAMP, health_data = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `),
-        
-        deletePBX: db.prepare(`DELETE FROM pbx_instances WHERE id = ?`),
-        
-        getPBXById: db.prepare(`SELECT * FROM pbx_instances WHERE id = ?`),
-        
-        getAllPBX: db.prepare(`SELECT * FROM pbx_instances ORDER BY name`),
-        
-        // Health history
-        insertHealthCheck: db.prepare(`
-            INSERT INTO health_history (pbx_id, status, response_time, error_message, extensions_count, trunks_count)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `),
-        
-        getHealthHistory: db.prepare(`
-            SELECT * FROM health_history 
-            WHERE pbx_id = ? 
-            ORDER BY checked_at DESC 
-            LIMIT ?
-        `),
-        
-        // Rate limiting
-        upsertRateLimit: db.prepare(`
-            INSERT INTO api_rate_limits (pbx_url, api_calls, window_start)
-            VALUES (?, 1, CURRENT_TIMESTAMP)
-            ON CONFLICT(pbx_url) DO UPDATE SET
-                api_calls = CASE 
-                    WHEN datetime('now', '-30 minutes') > window_start 
-                    THEN 1 
-                    ELSE api_calls + 1 
-                END,
-                window_start = CASE 
-                    WHEN datetime('now', '-30 minutes') > window_start 
-                    THEN CURRENT_TIMESTAMP 
-                    ELSE window_start 
-                END
-        `),
-        
-        getRateLimit: db.prepare(`
-            SELECT api_calls, window_start 
-            FROM api_rate_limits 
-            WHERE pbx_url = ? AND datetime('now', '-30 minutes') <= window_start
-        `),
-        
-        // Cleanup old data
-        cleanupOldHealthHistory: db.prepare(`
-            DELETE FROM health_history 
-            WHERE checked_at < datetime('now', '-30 days')
-        `),
-        
-        cleanupOldRateLimits: db.prepare(`
-            DELETE FROM api_rate_limits 
-            WHERE window_start < datetime('now', '-1 hour')
-        `),
+        // Announcements
+        insertAnnouncement: db.prepare(`INSERT INTO announcements (id, content, author, pinned) VALUES (?, ?, ?, ?)`),
+        deleteAnnouncement: db.prepare(`DELETE FROM announcements WHERE id = ?`),
+        getAllAnnouncements: db.prepare(`SELECT * FROM announcements ORDER BY pinned DESC, created_at DESC`),
 
-        // Notes operations
-        insertNote: db.prepare(`
-            INSERT INTO pbx_notes (id, pbx_id, content, author, priority)
-            VALUES (?, ?, ?, ?, ?)
-        `),
-        
-        updateNote: db.prepare(`
-            UPDATE pbx_notes 
-            SET content = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ? AND pbx_id = ?
-        `),
-        
-        deleteNote: db.prepare(`
-            DELETE FROM pbx_notes 
-            WHERE id = ? AND pbx_id = ?
-        `),
-        
-        getNotesByPBX: db.prepare(`
-            SELECT * FROM pbx_notes 
-            WHERE pbx_id = ? 
-            ORDER BY created_at DESC
-        `),
-        
-        getAllNotes: db.prepare(`
-            SELECT n.*, p.name as pbx_name 
-            FROM pbx_notes n 
-            JOIN pbx_instances p ON n.pbx_id = p.id 
-            ORDER BY n.created_at DESC
-        `)
+        // User management
+        insertUser: db.prepare(`INSERT OR IGNORE INTO users (id, username, role) VALUES (?, ?, ?)`),
+        getUserByUsername: db.prepare(`SELECT * FROM users WHERE username = ?`),
+        getAllUsers: db.prepare(`SELECT * FROM users ORDER BY username ASC`),
+        deleteUser: db.prepare(`DELETE FROM users WHERE id = ?`),
     };
+
+    // Create default admin
+    statements.insertUser.run('admin-id-1', 'blakeAdmin', 'admin');
+
+    console.log('✅ Database initialized successfully');
+};
 
     console.log('✅ Database initialized successfully');
 };
@@ -380,7 +325,38 @@ export const dbOperations = {
             timestamp: row.created_at,
             updatedAt: row.updated_at
         }));
-    }
+    },
+
+    // Announcements
+    createAnnouncement: ({ id, content, author, pinned }) => {
+        return statements.insertAnnouncement.run(id, content, author, pinned);
+    },
+    deleteAnnouncement: (id) => {
+        return statements.deleteAnnouncement.run(id);
+    },
+    getAllAnnouncements: () => {
+        return statements.getAllAnnouncements.all().map(row => ({
+            id: row.id,
+            content: row.content,
+            author: row.author,
+            pinned: Boolean(row.pinned),
+            createdAt: row.created_at
+        }));
+    },
+
+    // User operations
+    getUserByUsername: (username) => {
+        return statements.getUserByUsername.get(username);
+    },
+    createUser: (id, username, role = 'tech') => {
+        return statements.insertUser.run(id, username, role);
+    },
+    getAllUsers: () => {
+        return statements.getAllUsers.all();
+    },
+    deleteUser: (id) => {
+        return statements.deleteUser.run(id);
+    },
 };
 
 // Export database instance for advanced operations

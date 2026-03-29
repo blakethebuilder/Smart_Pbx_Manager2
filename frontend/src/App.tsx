@@ -8,18 +8,14 @@ import LoginScreen from './components/Auth/LoginScreen'
 import Layout from './components/Layout/Layout'
 import Dashboard from './pages/Dashboard'
 import Notes from './pages/Notes'
+import UserManagement from './pages/UserManagement'
 import PBXLoader from './components/PBX/PBXLoader'
 
 function App() {
-  const { isAuthenticated, checkAuth } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
   const { setPBXInstances, setMonitoringPaused, selectedPBX, selectPBX } = usePBXStore()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState('dashboard')
-
-  useEffect(() => {
-    // Check authentication status on app load
-    checkAuth().finally(() => setIsLoading(false))
-  }, [checkAuth])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -60,7 +56,7 @@ function App() {
       case 'dashboard':
         return <Dashboard />
       case 'pbx-instances':
-        return <Dashboard /> // For now, same as dashboard
+        return <Dashboard />
       case 'clients':
         return (
           <div className="text-center py-12">
@@ -77,6 +73,8 @@ function App() {
         )
       case 'notes':
         return <Notes />
+      case 'user-management':
+        return <UserManagement />
       case 'settings':
         return (
           <div className="text-center py-12">

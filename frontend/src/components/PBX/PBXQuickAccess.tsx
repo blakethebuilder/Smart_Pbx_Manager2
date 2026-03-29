@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import { Star, Clock, Tag } from 'lucide-react'
 import { usePBXStore } from '../../stores/pbxStore'
-import { getStatusDotClass } from '../../utils/formatters'
 
 const PBXQuickAccess = () => {
   const { 
@@ -46,11 +45,10 @@ const PBXQuickAccess = () => {
                 <motion.button
                   key={pbx.id}
                   onClick={() => selectPBX(pbx)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-dark-900 hover:bg-slate-700 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 bg-dark-900 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/50"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className={getStatusDotClass(pbx.status)} />
                   <span className="text-sm text-white">{pbx.name}</span>
                 </motion.button>
               ))}
@@ -70,11 +68,10 @@ const PBXQuickAccess = () => {
                 <motion.button
                   key={pbx.id}
                   onClick={() => selectPBX(pbx)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-dark-900 hover:bg-slate-700 rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 bg-dark-900 hover:bg-slate-700 rounded-lg transition-colors border border-slate-700/50"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className={getStatusDotClass(pbx.status)} />
                   <span className="text-sm text-white">{pbx.name}</span>
                 </motion.button>
               ))}

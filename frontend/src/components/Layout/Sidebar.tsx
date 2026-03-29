@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
+import { useAuthStore } from '../../stores/authStore'
+
 interface SidebarProps {
   collapsed: boolean
   onToggleCollapse: () => void
@@ -22,12 +24,15 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'dashboard', onNavigate }: SidebarProps) => {
+  const { role } = useAuthStore()
+
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
     { id: 'pbx-instances', icon: Server, label: 'PBX Instances' },
     { id: 'clients', icon: Users, label: 'Clients' },
     { id: 'monitoring', icon: Activity, label: 'Monitoring' },
     { id: 'notes', icon: BookOpen, label: 'Notes' },
+    ...(role === 'admin' ? [{ id: 'user-management', icon: Users, label: 'Technicians' }] : []),
     { id: 'settings', icon: Settings, label: 'Settings' },
   ]
 

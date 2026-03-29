@@ -21,6 +21,7 @@ import authRoutes from './src/routes/authRoutes.js';
 import pbxRoutes from './src/routes/pbxRoutes.js';
 import systemRoutes from './src/routes/systemRoutes.js';
 import notesRoutes from './src/routes/notesRoutes.js';
+import announcementsRoutes from './src/routes/announcementsRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -50,8 +51,9 @@ app.use(express.static('public'));
 app.use('/api', authRoutes);
 app.use('/api/pbx', pbxRoutes);
 app.use('/api/notes', notesRoutes);
+app.use('/api/announcements', announcementsRoutes);
 app.use('/api/system', systemRoutes);
-app.use('/', systemRoutes); // Keep for legacy /health and /test if needed
+app.use('/', systemRoutes);
 
 // Make Socket.io available to routes
 app.set('io', io);
