@@ -42,6 +42,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Routes
+app.get('/health', (req, res) => res.status(200).send('OK'));
 app.use('/api', authRoutes);
 app.use('/api/pbx', pbxRoutes);
 app.use('/api/notes', notesRoutes);

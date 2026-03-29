@@ -129,10 +129,6 @@ export const dbOperations = {
         return statements.updatePBX.run(pbx.name, pbx.url, pbx.tags, id);
     },
     
-    updatePBXHealth: (id, status, healthData) => {
-        return statements.updatePBXHealth.run(status, JSON.stringify(healthData), id);
-    },
-    
     deletePBX: (id) => {
         return statements.deletePBX.run(id);
     },
