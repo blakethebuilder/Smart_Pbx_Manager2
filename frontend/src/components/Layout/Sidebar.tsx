@@ -32,8 +32,6 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', o
   ]
 
   const handleNavigation = (pageId: string) => {
-
-          const handleNavigation = (pageId: string) => {
     if (onNavigate) {
       onNavigate(pageId)
     }
