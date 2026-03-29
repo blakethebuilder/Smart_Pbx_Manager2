@@ -95,7 +95,7 @@ const Dashboard = () => {
   }
 
   const handleDeduplicate = async () => {
-    if (!confirm('Are you sure you want to remove duplicate PBX links based on their URL?')) return
+    if (!confirm('Are you sure you want to remove duplicate PBX links based on the Client Name?')) return
     setIsLoading(true)
     try {
       const response = await fetch('/api/pbx/deduplicate', { method: 'POST' })

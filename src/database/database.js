@@ -243,7 +243,7 @@ export const dbOperations = {
             WHERE rowid NOT IN (
                 SELECT MIN(rowid) 
                 FROM pbx_instances 
-                GROUP BY url
+                GROUP BY name
             )
         `);
         return result;
