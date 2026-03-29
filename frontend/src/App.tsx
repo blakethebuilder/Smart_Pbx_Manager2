@@ -17,12 +17,77 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) {
       socketService.connect()
+      
       socketService.on('pbx-update', (data: any) => {
         setPBXInstances(data)
       })
+
       return () => {
         socketService.disconnect()
       }
+    }
+  }, [isAuthenticated, setPBXInstances])
+
+  const handleNavigation = (page: string) => {
+    setCurrentPage(page)
+    if (selectedPBX && page !== 'notes') {
+      selectPBX(null)
+    }
+  }
+
+  const renderCurrentPage = () => {
+    if (selectedPBX) {
+      return <Notes selectedPBXId={selectedPBX.id} />
+    }
+
+    switch (currentPage) {
+      case 'home':
+        return <Dashboard />
+      case 'notes':
+        return <Notes />
+      case 'user-management':
+        return <UserManagement />
+      default:
+        return <Dashboard />
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-dark-900">
+      <AnimatePresence mode="wait">
+        {!isAuthenticated ? (
+          <motion.div
+            key="login"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <LoginScreen />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="main"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Layout 
+              currentPage={selectedPBX ? 'notes' : currentPage} 
+              onNavigate={handleNavigation}
+            >
+              {renderCurrentPage()}
+            </Layout>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export default App
+
     }
   }, [isAuthenticated, setPBXInstances])
 

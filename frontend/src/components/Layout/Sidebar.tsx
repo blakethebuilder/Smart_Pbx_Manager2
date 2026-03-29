@@ -61,7 +61,7 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', o
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white">MSP PBX</h1>
-                <p className="text-xs text-slate-400">Dashboard</p>
+                <p className="text-xs text-slate-400">Home</p>
               </div>
             </motion.div>
           )}
@@ -87,11 +87,11 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', o
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
             onClick={() => handleNavigation(item.id)}
-            className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-200${
+            className={\`w-full flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-200\${
               currentPage === item.id 
                 ? " bg-primary-500/20 text-primary-400 border border-primary-500/30" 
                 : " text-slate-400 hover:text-white hover:bg-slate-700/50"
-            }`}
+            }\`}
           >
             <item.icon className="w-5 h-5 flex-shrink-0" />
             {!collapsed && (
