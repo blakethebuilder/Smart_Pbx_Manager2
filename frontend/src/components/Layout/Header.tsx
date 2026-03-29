@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Menu, User, LogOut } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'

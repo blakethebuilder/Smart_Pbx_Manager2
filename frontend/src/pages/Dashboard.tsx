@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Grid, List, FileUp } from 'lucide-react'
+import { Plus, Grid, List, FileUp, X } from 'lucide-react'
 import { usePBXStore } from '../stores/pbxStore'
 import { pbxService } from '../services/pbxService'
 import PBXGrid from '../components/PBX/PBXGrid'
@@ -20,6 +19,9 @@ const Dashboard = () => {
   const [showImportModal, setShowImportModal] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [isLoading, setIsLoading] = useState(true)
+  const [csvData, setCsvData] = useState('')
+  const [importResults, setImportResults] = useState<{name: string, url: string}[]>([])
+  const [importError, setImportError] = useState<string | null>(null)
 
   const loadPBXInstances = async () => {
     try {
@@ -35,7 +37,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadPBXInstances()
-  }, [setPBXInstances])
+  }, [])
 
   const filteredInstances = pbxInstances.filter(pbx =>
     pbx.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -51,321 +53,137 @@ const Dashboard = () => {
       if (!lastNote) return false
       const noteDate = new Date(lastNote.timestamp)
       const now = new Date()
-      return (now.getTime() - noteDate.getTime()) < 24 * 60 * 60 * 1000 // Last 24h
+      return (now.getTime() - noteDate.getTime()) < 24 * 60 * 60 * 1000
     }).length
   }
 
-  // --- Import Handlers (Must be defined outside return block) ---
   const handlePreviewImport = () => {
-    const csvData = (document.getElementById('csvInput') as HTMLTextAreaElement).value;
-    const previewDiv = document.getElementById('importPreviewContent');
-    const previewArea = document.getElementById('importPreviewArea');
-    const errorDiv = document.getElementById('importError');
-
-    errorDiv.classList.add('hidden');
-    previewArea.classList.remove('hidden');
-
-    const lines = csvData.trim().split('\\n').filter(line => line.trim() !== '');
+    setImportError(null)
+    const lines = csvData.trim().split('\n').filter(l => l.trim() !== '')
     if (lines.length === 0) {
-        previewDiv.innerHTML = '<div class="text-red-400">No data found to preview.</div>';
-        return;
+      setImportError('No data found to preview.')
+      return
     }
-    
-    const headers = lines[0].toLowerCase().includes('name') ? lines[0].split(/[,\\t]/).map(h => h.trim()) : ['name', 'url', 'appId', 'appSecret', 'isShared'];
 
-    const previewHtml = lines.slice(1).map((line, index) => {
-        const values = line.split(/[,\\t]/).map(v => v.trim());
-        
-        if (values.length !== headers.length) {
-            return \`<div class="text-red-400">Line \${index + 2} (Skipped): Column mismatch (\${values.length} cols found).</div>\`;
-        }
+    const preview = lines.map(line => {
+      const [name, url] = line.split(/[,	]/).map(v => v.trim())
+      return { name, url }
+    }).filter(item => item.name && item.url)
 
-        const pbx = {};
-        headers.forEach((header, i) => {
-            let value = values[i];
-            if (header === 'isshared' && value !== undefined) {
-                pbx[header] = value.toLowerCase() === 'true' || value === '1';
-            } else if (value) {
-                pbx[header] = value;
-            }
-        });
+    if (preview.length === 0) {
+      setImportError('No valid data found (Check format: name,url).')
+      return
+    }
 
-        return \`
-            <div class="border-b border-dark-800 py-1">
-                <span class="font-bold text-white">\${index + 1}.</span> \${pbx.name || '[No Name]'} (\${pbx.url || 'No URL'})
-            </div>
-        \`;
-    }).join('');
-
-    previewDiv.innerHTML = previewHtml;
-  };
+    setImportResults(preview)
+  }
 
   const handleBulkImport = async () => {
-    const csvData = (document.getElementById('csvInput') as HTMLTextAreaElement).value;
-    const errorDiv = document.getElementById('importError');
-    const btn = (document.querySelector('.fixed.inset-0.z-50 .btn-primary') as HTMLButtonElement);
-    
-    if (!csvData.trim()) {
-        errorDiv.textContent = 'CSV data cannot be empty.';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
-
-    setIsLoading(true);
-    if (btn) btn.disabled = true;
-    errorDiv.classList.add('hidden');
-
-    const lines = csvData.trim().split('\\n').filter(line => line.trim() !== '');
-    if (lines.length <= 1) {
-        errorDiv.textContent = 'No actual data rows found after header.';
-        errorDiv.classList.remove('hidden');
-        setIsLoading(false);
-        if (btn) btn.disabled = false;
-        return;
-    }
-
-    const headers = lines[0].split(/[,\\t]/).map(h => h.trim().toLowerCase());
-    
-    const instancesToImport = lines.slice(1).map(line => {
-        const values = line.split(/[,\\t]/).map(v => v.trim());
-        const pbx = {};
-        headers.forEach((header, i) => {
-            let value = values[i];
-            if (header === 'isshared' && value !== undefined) {
-                pbx[header] = value.toLowerCase() === 'true' || value === '1';
-            } else if (value) {
-                pbx[header] = value;
-            }
-        });
-        return pbx;
-    });
-
+    if (importResults.length === 0) return
+    setIsLoading(true)
     try {
-        const res = await pbxService.bulkImport(instancesToImport);
-        
-        if (res.success) {
-            alert(\`Import successful! Created: \${res.created}, Updated: \${res.updated}\`);
-            loadPBXInstances(); // Reload data
-            setShowImportModal(false);
-        } else {
-            throw new Error(\`Import failed: \${res.errors.length} errors.\`);
-        }
+      await pbxService.bulkImport(importResults)
+      await loadPBXInstances()
+      setShowImportModal(false)
+      setCsvData('')
+      setImportResults([])
     } catch (err) {
-        errorDiv.textContent = err instanceof Error ? err.message : 'An unknown error occurred during import.';
-        errorDiv.classList.remove('hidden');
+      setImportError('Import failed. Please check your network or data.')
     } finally {
-        setIsLoading(false);
-        if (btn) btn.disabled = false;
+      setIsLoading(false)
     }
-  };
-  // --- End Import Modal Logic Placeholder ---
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">PBX Dashboard</h1>
-          <p className="text-slate-400 mt-1">Manage your client PBX hotlinks & notes</p>
+          <p className="text-slate-400 mt-1">Manage your client PBX hotlinks</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex bg-dark-800 rounded-lg p-1">
             <button onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}
-              title="Grid View"><Grid className="w-4 h-4" /></button>
+              className={`p-2 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><Grid className="w-4 h-4" /></button>
             <button onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}
-              title="List View"><List className="w-4 h-4" /></button>
+              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:text-white'}`}><List className="w-4 h-4" /></button>
           </div>
-          <motion.button onClick={() => setShowImportModal(true)}
-            className="btn-secondary flex items-center space-x-2"
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <button onClick={() => setShowImportModal(true)} className="btn-secondary flex items-center space-x-2">
             <FileUp className="w-4 h-4" />
-            <span>Import CSV</span>
-          </motion.button>
-          <motion.button onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center space-x-2"
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <span>Import</span>
+          </button>
+          <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center space-x-2">
             <Plus className="w-4 h-4" />
             <span>Add Hotlink</span>
-          </motion.button>
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Total Hotlinks</p>
-              <p className="text-2xl font-bold text-white">{stats.total}</p>
-            </div>
-            <div className="w-10 h-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
-              <Grid className="w-5 h-5 text-primary-400" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Favorites</p>
-              <p className="text-2xl font-bold text-warning-500">{stats.favorites}</p>
-            </div>
-            <div className="w-10 h-10 bg-warning-500/20 rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-warning-400" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Tech Notes</p>
-              <p className="text-2xl font-bold text-success-500">{stats.notes}</p>
-            </div>
-            <div className="w-10 h-10 bg-success-500/20 rounded-lg flex items-center justify-center">
-              <Grid className="w-5 h-5 text-success-400" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="card p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Recent Activity</p>
-              <p className="text-2xl font-bold text-secondary-500">{stats.recent}</p>
-            </div>
-            <div className="w-10 h-10 bg-secondary-500/20 rounded-lg flex items-center justify-center">
-              <Plus className="w-5 h-5 text-secondary-400" />
-            </div>
-          </div>
-        </motion.div>
+        <div className="card p-4">
+          <p className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Total Links</p>
+          <p className="text-2xl font-bold text-white">{stats.total}</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Favorites</p>
+          <p className="text-2xl font-bold text-warning-500">{stats.favorites}</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Tech Notes</p>
+          <p className="text-2xl font-bold text-success-500">{stats.notes}</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Recent Activity</p>
+          <p className="text-2xl font-bold text-secondary-500">{stats.recent}</p>
+        </div>
       </div>
 
-      {/* Announcements */}
       <AnnouncementBox />
-
-      {/* Quick Access */}
       <PBXQuickAccess />
 
-      {/* PBX Grid */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-          </div>
-        ) : (
-          <PBXGrid 
-            instances={filteredInstances} 
-            viewMode={viewMode}
-          />
-        )}
-      </motion.div>
+      {isLoading ? (
+        <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div></div>
+      ) : (
+        <PBXGrid instances={filteredInstances} viewMode={viewMode} />
+      )}
 
-      {/* Add PBX Modal */}
-      <AddPBXModal 
-        isOpen={showAddModal} 
-        onClose={() => setShowAddModal(false)}
-        onSuccess={loadPBXInstances}
-      />
+      <AddPBXModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSuccess={loadPBXInstances} />
 
-      {/* CSV Import Modal */}
-      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${showImportModal ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
-           onClick={() => setShowImportModal(false)}>
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.3 }}
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-3xl bg-dark-800 border border-slate-700 rounded-xl shadow-2xl">
-            
-            {/* Modal Header */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl bg-dark-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-slate-700">
-                <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-secondary-500/20 rounded-lg flex items-center justify-center">
-                        <FileUp className="w-4 h-4 text-secondary-400" />
-                    </div>
-                    <h2 className="text-xl font-semibold text-white">Bulk Import PBX Clients</h2>
-                </div>
-                <button onClick={() => setShowImportModal(false)} disabled={isLoading}
-                    className="p-2 text-slate-400 hover:text-white transition-colors disabled:opacity-50">
-                    <Plus className="w-5 h-5 rotate-45" /> {/* Reusing Plus icon as X is not imported */}
-                </button>
+              <h2 className="text-xl font-bold text-white">Bulk Import Links</h2>
+              <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
-
-            {/* Modal Body / Form */}
-            <div className="p-6 space-y-4">
-                <div className="p-4 bg-primary-500/5 border border-primary-500/10 rounded-lg">
-                    <p className="text-sm text-primary-400 font-medium mb-2">Instructions:</p>
-                    <p className="text-xs text-slate-300">
-                        Paste CSV data below. The system expects columns like: `name,url,appId,appSecret,isShared`.
-                        IDs are generated automatically if not provided.
-                    </p>
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+              <div className="p-3 bg-primary-500/5 border border-primary-500/10 rounded text-xs text-slate-400">
+                Format: <strong>name,url</strong> (one per line)
+              </div>
+              <textarea
+                value={csvData}
+                onChange={(e) => setCsvData(e.target.value)}
+                placeholder="Client A,https://pbx-a.com&#10;Client B,https://pbx-b.com"
+                className="w-full h-48 px-4 py-3 bg-dark-900 border border-slate-600 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              {importError && <p className="text-error-400 text-sm font-medium">{importError}</p>}
+              {importResults.length > 0 && (
+                <div className="bg-dark-900 p-4 rounded-lg border border-slate-700 space-y-1">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Ready to Import ({importResults.length})</p>
+                  {importResults.map((r, i) => <div key={i} className="text-xs text-slate-400 truncate">{i+1}. {r.name} — {r.url}</div>)}
                 </div>
-
-                <div className="space-y-3">
-                    <textarea
-                        id="csvInput"
-                        placeholder="Paste CSV data here..."
-                        rows={10}
-                        className="w-full px-4 py-3 bg-dark-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500 resize-y"
-                    />
-                </div>
-                
-                <div id="importPreviewArea" className="bg-dark-900 p-4 rounded-lg border border-slate-700 hidden">
-                    <p className="text-xs font-bold text-secondary-400 mb-2">Preview:</p>
-                    <div id="importPreviewContent" className="text-xs text-slate-400 max-h-40 overflow-y-auto"></div>
-                </div>
-
-                <div id="importError" className="p-3 bg-error-500/10 border border-error-500/20 rounded-lg text-error-400 text-sm hidden"></div>
+              )}
             </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end space-x-3 p-6 border-t border-slate-700">
-                <button type="button" onClick={() => setShowImportModal(false)} disabled={isLoading}
-                        className="btn-secondary disabled:opacity-50">
-                    Cancel
-                </button>
-                <button type="button" onClick={() => handlePreviewImport()} disabled={isLoading}
-                        className="btn-secondary disabled:opacity-50 bg-slate-600 hover:bg-slate-700">
-                    Preview
-                </button>
-                <button type="button" onClick={() => handleBulkImport()} disabled={isLoading}
-                        className="btn-primary flex items-center space-x-2 disabled:opacity-50">
-                    {isLoading ? 
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        : <FileUp className="w-4 h-4" />}
-                    <span>Import Clients</span>
-                </button>
+            <div className="flex justify-end space-x-3 p-6 border-t border-slate-700 bg-dark-900/50">
+              <button onClick={() => setShowImportModal(false)} className="btn-secondary">Cancel</button>
+              <button onClick={handlePreviewImport} className="btn-secondary bg-slate-700 hover:bg-slate-600">Preview</button>
+              <button onClick={handleBulkImport} disabled={isLoading || importResults.length === 0} className="btn-primary min-w-[120px]">
+                {isLoading ? 'Importing...' : 'Confirm Import'}
+              </button>
             </div>
-        </motion.div>
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

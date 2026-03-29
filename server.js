@@ -16,7 +16,6 @@ import authRoutes from './src/routes/authRoutes.js';
 import pbxRoutes from './src/routes/pbxRoutes.js';
 import notesRoutes from './src/routes/notesRoutes.js';
 import announcementsRoutes from './src/routes/announcementsRoutes.js';
-import pbxImportRoutes from './src/routes/pbxImportRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -47,7 +46,6 @@ app.use('/api', authRoutes);
 app.use('/api/pbx', pbxRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/announcements', announcementsRoutes);
-app.use('/api/import', pbxImportRoutes);
 
 // Make Socket.io available to routes
 app.set('io', io);

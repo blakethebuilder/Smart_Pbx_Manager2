@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './stores/authStore'
 import { usePBXStore } from './stores/pbxStore'
 import { socketService } from './services/socketService'
-import { systemService } from './services/systemService'
 import LoginScreen from './components/Auth/LoginScreen'
 import Layout from './components/Layout/Layout'
 import Dashboard from './pages/Dashboard'
@@ -13,19 +12,14 @@ import UserManagement from './pages/UserManagement'
 function App() {
   const { isAuthenticated } = useAuthStore()
   const { setPBXInstances, selectedPBX, selectPBX } = usePBXStore()
-  const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState('dashboard')
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Initialize socket connection
       socketService.connect()
-      
-      // Listen for PBX updates
       socketService.on('pbx-update', (data: any) => {
         setPBXInstances(data)
       })
-
       return () => {
         socketService.disconnect()
       }
@@ -34,137 +28,34 @@ function App() {
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page)
-    // Clear selected PBX when navigating away from Notes/Global view
     if (selectedPBX && page !== 'notes') {
       selectPBX(null)
     }
   }
 
   const renderCurrentPage = () => {
-    // If a PBX is selected, we navigate to the Notes page to view/add notes for it
     if (selectedPBX) {
       return <Notes selectedPBXId={selectedPBX.id} />
     }
 
     switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard />
-      case 'pbx-instances':
-        return <Dashboard /> // For now, same as dashboard
-      case 'clients':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Clients</h2>
-            <p className="text-slate-400">Client management coming soon...</p>
-          </div>
-        )
-      case 'monitoring':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Monitoring</h2>
-            <p className="text-slate-400">Advanced monitoring features coming soon...</p>
-          </div>
-        )
-      case 'notes':
-        return <Notes />
-      case 'user-management':
-        return <UserManagement />
-      case 'settings':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Settings</h2>
-            <p className="text-slate-400">System settings coming soon...</p>
-          </div>
-        )
-      default:
-        return <Dashboard />
+      case 'dashboard': return <Dashboard />
+      case 'notes': return <Notes />
+      case 'user-management': return <UserManagement />
+      default: return <Dashboard />
     }
-  }
-    }
-  }, [isAuthenticated, setPBXInstances])
-
-  const handleNavigation = (page: string) => {
-    setCurrentPage(page)
-    // Clear selected PBX when navigating away from PBX loader
-    if (selectedPBX && page !== 'pbx-loader') {
-      selectPBX(null)
-    }
-  }
-
-  const renderCurrentPage = () => {
-    // If a PBX is selected, show the PBX Loader regardless of current page
-    if (selectedPBX) {
-      return <PBXLoader />
-    }
-
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard />
-      case 'pbx-instances':
-        return <Dashboard />
-      case 'clients':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Clients</h2>
-            <p className="text-slate-400">Client management coming soon...</p>
-          </div>
-        )
-      case 'monitoring':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Monitoring</h2>
-            <p className="text-slate-400">Advanced monitoring features coming soon...</p>
-          </div>
-        )
-      case 'notes':
-        return <Notes />
-      case 'user-management':
-        return <UserManagement />
-      case 'settings':
-        return (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-white mb-4">Settings</h2>
-            <p className="text-slate-400">System settings coming soon...</p>
-          </div>
-        )
-      default:
-        return <Dashboard />
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-      </div>
-    )
   }
 
   return (
     <div className="min-h-screen bg-dark-900">
       <AnimatePresence mode="wait">
         {!isAuthenticated ? (
-          <motion.div
-            key="login"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <LoginScreen />
           </motion.div>
         ) : (
-          <motion.div
-            key="dashboard"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Layout 
-              currentPage={selectedPBX ? 'pbx-loader' : currentPage}
-              onNavigate={handleNavigation}
-            >
+          <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <Layout currentPage={selectedPBX ? 'notes' : currentPage} onNavigate={handleNavigation}>
               {renderCurrentPage()}
             </Layout>
           </motion.div>

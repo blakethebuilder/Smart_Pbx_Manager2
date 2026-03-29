@@ -63,4 +63,34 @@ router.delete('/:id', (req, res) => {
     }
 });
 
+// Bulk import endpoint
+router.post('/bulk-import', (req, res) => {
+    const { instances } = req.body;
+    if (!instances || !Array.isArray(instances)) {
+        return res.status(400).json({ error: 'Invalid instances data' });
+    }
+
+    const results = { imported: 0, errors: [] };
+    try {
+        for (const instance of instances) {
+            try {
+                const newPBX = {
+                    id: uuidv4(),
+                    name: instance.name,
+                    url: instance.url.trim().replace(/\/login\/?$/, ''),
+                    tags: instance.tags ? JSON.stringify(instance.tags) : null,
+                };
+                dbOperations.createPBX(newPBX);
+                results.imported++;
+            } catch (error) {
+                results.errors.push(`Failed to import ${instance.name}: ${error.message}`);
+            }
+        }
+        res.json({ success: true, ...results });
+    } catch (error) {
+        console.error('❌ Bulk import failed:', error.message);
+        res.status(500).json({ error: 'Bulk import failed' });
+    }
+});
+
 export default router;
