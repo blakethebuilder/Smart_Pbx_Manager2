@@ -28,6 +28,16 @@ let statements = {};
 const initDatabase = () => {
     console.log('🗄️ Initializing SQLite database...');
     
+    // Check if migration is needed for pbx_instances
+    const tableInfo = db.prepare("PRAGMA table_info(pbx_instances)").all();
+    if (tableInfo.length > 0) {
+        const hasTags = tableInfo.some(col => col.name === 'tags');
+        if (!hasTags) {
+            console.log('📦 Migrating pbx_instances table: adding tags column...');
+            db.exec("ALTER TABLE pbx_instances ADD COLUMN tags TEXT");
+        }
+    }
+
     // PBX instances table (Simplified for hotlinks)
     db.exec(`
         CREATE TABLE IF NOT EXISTS pbx_instances (
@@ -82,37 +92,41 @@ const initDatabase = () => {
     `);
 
     // Initialize prepared statements after tables are created
-    statements = {
-        // PBX instances
-        insertPBX: db.prepare(`INSERT INTO pbx_instances (id, name, url, tags) VALUES (?, ?, ?, ?)`),
-        updatePBX: db.prepare(`UPDATE pbx_instances SET name = ?, url = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`),
-        deletePBX: db.prepare(`DELETE FROM pbx_instances WHERE id = ?`),
-        getPBXById: db.prepare(`SELECT * FROM pbx_instances WHERE id = ?`),
-        getAllPBX: db.prepare(`SELECT * FROM pbx_instances ORDER BY name ASC`),
+    try {
+        statements = {
+            // PBX instances
+            insertPBX: db.prepare(`INSERT INTO pbx_instances (id, name, url, tags) VALUES (?, ?, ?, ?)`),
+            updatePBX: db.prepare(`UPDATE pbx_instances SET name = ?, url = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`),
+            deletePBX: db.prepare(`DELETE FROM pbx_instances WHERE id = ?`),
+            getPBXById: db.prepare(`SELECT * FROM pbx_instances WHERE id = ?`),
+            getAllPBX: db.prepare(`SELECT * FROM pbx_instances ORDER BY name ASC`),
 
-        // Notes operations
-        insertNote: db.prepare(`INSERT INTO pbx_notes (id, pbx_id, content, author, priority) VALUES (?, ?, ?, ?, ?)`),
-        updateNote: db.prepare(`UPDATE pbx_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND pbx_id = ?`),
-        deleteNote: db.prepare(`DELETE FROM pbx_notes WHERE id = ? AND pbx_id = ?`),
-        getNotesByPBX: db.prepare(`SELECT * FROM pbx_notes WHERE pbx_id = ? ORDER BY created_at DESC`),
-        getAllNotes: db.prepare(`SELECT n.*, p.name as pbx_name FROM pbx_notes n JOIN pbx_instances p ON n.pbx_id = p.id ORDER BY n.created_at DESC`),
+            // Notes operations
+            insertNote: db.prepare(`INSERT INTO pbx_notes (id, pbx_id, content, author, priority) VALUES (?, ?, ?, ?, ?)`),
+            updateNote: db.prepare(`UPDATE pbx_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND pbx_id = ?`),
+            deleteNote: db.prepare(`DELETE FROM pbx_notes WHERE id = ? AND pbx_id = ?`),
+            getNotesByPBX: db.prepare(`SELECT * FROM pbx_notes WHERE pbx_id = ? ORDER BY created_at DESC`),
+            getAllNotes: db.prepare(`SELECT n.*, p.name as pbx_name FROM pbx_notes n JOIN pbx_instances p ON n.pbx_id = p.id ORDER BY n.created_at DESC`),
 
-        // Announcements
-        insertAnnouncement: db.prepare(`INSERT INTO announcements (id, content, author, pinned) VALUES (?, ?, ?, ?)`),
-        deleteAnnouncement: db.prepare(`DELETE FROM announcements WHERE id = ?`),
-        getAllAnnouncements: db.prepare(`SELECT * FROM announcements ORDER BY pinned DESC, created_at DESC`),
+            // Announcements
+            insertAnnouncement: db.prepare(`INSERT INTO announcements (id, content, author, pinned) VALUES (?, ?, ?, ?)`),
+            deleteAnnouncement: db.prepare(`DELETE FROM announcements WHERE id = ?`),
+            getAllAnnouncements: db.prepare(`SELECT * FROM announcements ORDER BY pinned DESC, created_at DESC`),
 
-        // User management
-        insertUser: db.prepare(`INSERT OR IGNORE INTO users (id, username, role) VALUES (?, ?, ?)`),
-        getUserByUsername: db.prepare(`SELECT * FROM users WHERE username = ?`),
-        getAllUsers: db.prepare(`SELECT * FROM users ORDER BY username ASC`),
-        deleteUser: db.prepare(`DELETE FROM users WHERE id = ?`),
-    };
+            // User management
+            insertUser: db.prepare(`INSERT OR IGNORE INTO users (id, username, role) VALUES (?, ?, ?)`),
+            getUserByUsername: db.prepare(`SELECT * FROM users WHERE username = ?`),
+            getAllUsers: db.prepare(`SELECT * FROM users ORDER BY username ASC`),
+            deleteUser: db.prepare(`DELETE FROM users WHERE id = ?`),
+        };
 
-    // Create default admin
-    statements.insertUser.run('admin-id-1', 'blakeAdmin', 'admin');
-
-    console.log('✅ Database initialized successfully');
+        // Create default admin
+        statements.insertUser.run('admin-id-1', 'blakeAdmin', 'admin');
+        console.log('✅ Database initialized successfully');
+    } catch (error) {
+        console.error('❌ Failed to initialize prepared statements:', error.message);
+        throw error;
+    }
 };
 
 // Database operations

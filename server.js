@@ -71,18 +71,8 @@ io.on('connection', (socket) => {
 // Global error handler
 app.use((error, req, res, next) => {
     console.error('❌ Unhandled error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
 });
-
-// Initialize database and migrate from JSON if needed
-async function initializePBXData() {
-    try {
-        dbOperations.init();
-        console.log('✅ Database initialized successfully.');
-    } catch (error) {
-        console.error('❌ Failed to initialize database:', error.message);
-    }
-}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -101,18 +91,23 @@ process.on('SIGINT', () => {
     });
 });
 
-// Start server with database initialization
-server.listen(PORT, async () => {
+// Initialize database
+try {
+    dbOperations.init();
+    console.log('✅ Database ready.');
+} catch (error) {
+    console.error('❌ CRITICAL: Failed to initialize database:', error.message);
+    // Continue anyway, but expect 500 errors
+}
+
+// Start server
+server.listen(PORT, () => {
     console.log(`\n🚀 MSP Link Manager - v3.0 (Simplified)`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     console.log(`✓ Dashboard:  http://localhost:${PORT}`);
     console.log(`✓ Socket.io:  Connected`);
     console.log(`✓ Database:   SQLite`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
-    
-    // Initialize database
-    await initializePBXData();
-    
     console.log('🎯 Server ready.');
 });
 
