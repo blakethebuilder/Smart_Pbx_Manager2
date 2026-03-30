@@ -33,19 +33,23 @@ router.post('/login', (req, res) => {
 
     // Check for regular tech
     if (password === DASHBOARD_PASSWORD) {
-        console.log(`✅ Successful login by technician: ${techName}`);
-        
-        // Auto-register tech in database if they don't exist
+        // Find existing technician
         const existing = dbOperations.getUserByUsername(techName);
-        if (!existing) {
-            dbOperations.createUser(Date.now().toString(), techName, 'tech');
+        
+        if (existing) {
+            console.log(`✅ Successful login by technician: ${techName}`);
+            return res.json({ 
+                success: true, 
+                techName: techName,
+                role: 'tech'
+            });
+        } else {
+            console.log(`❌ Unauthorized login attempt by: ${techName} (Not registered)`);
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Account not registered. Please contact an administrator.' 
+            });
         }
-
-        res.json({ 
-            success: true, 
-            techName: techName,
-            role: 'tech'
-        });
     } else {
         console.log(`❌ Failed login attempt for: ${techName}`);
         res.json({ success: false, error: 'Invalid password' });

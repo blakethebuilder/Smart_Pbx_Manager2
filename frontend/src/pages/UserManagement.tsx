@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Trash2, Shield, UserPlus, ShieldAlert } from 'lucide-react'
+import { Users, Trash2, Shield, UserPlus, ShieldAlert, Plus } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 
 interface User {
@@ -13,6 +13,8 @@ const UserManagement = () => {
   const { role } = useAuthStore()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [newUsername, setNewUsername] = useState('')
+  const [isCreating, setIsSaving] = useState(false)
 
   const loadUsers = async () => {
     try {
@@ -33,6 +35,32 @@ const UserManagement = () => {
       loadUsers()
     }
   }, [role])
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newUsername.trim()) return
+
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername.trim() })
+      })
+
+      if (res.ok) {
+        setNewUsername('')
+        loadUsers()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to create user')
+      }
+    } catch (err) {
+      alert('Network error creating user')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const handleDeleteUser = async (id: string, username: string) => {
     if (username === 'blakeAdmin') {
@@ -76,7 +104,40 @@ const UserManagement = () => {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-700">
+          <div className="flex items-center space-x-2 mb-6">
+            <UserPlus className="w-5 h-5 text-primary-400" />
+            <h2 className="text-lg font-semibold text-white">Add New Technician</h2>
+          </div>
+          
+          <form onSubmit={handleCreateUser} className="flex gap-3">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Technician Name / Username"
+                className="w-full px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                disabled={isCreating}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isCreating || !newUsername.trim()}
+              className="btn-primary flex items-center space-x-2 whitespace-nowrap"
+            >
+              {isCreating ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              <span>Register Tech</span>
+            </button>
+          </form>
+        </div>
+
+        <div className="p-6 border-b border-slate-700 flex items-center justify-between bg-dark-900/30">
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-primary-400" />
             <h2 className="text-lg font-semibold text-white">Registered Technicians</h2>
@@ -154,12 +215,12 @@ const UserManagement = () => {
 
       <div className="p-6 bg-primary-500/5 border border-primary-500/10 rounded-xl space-y-3">
         <div className="flex items-center space-x-2 text-primary-400">
-          <UserPlus className="w-5 h-5" />
-          <h3 className="font-bold">Technician Access Info</h3>
+          <Shield className="w-5 h-5" />
+          <h3 className="font-bold">Technician Management Info</h3>
         </div>
         <p className="text-slate-400 text-sm">
-          Technicians are automatically registered the first time they log in using their name and the team password. 
-          As an administrator, you can revoke their access here by deleting their record.
+          Only administrators can register new technicians. Once registered, a technician can log in using their name and the shared team password. 
+          As an administrator, you can revoke their access at any time by deleting their record from the list above.
         </p>
       </div>
     </div>
