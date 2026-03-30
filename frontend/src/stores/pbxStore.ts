@@ -3,11 +3,16 @@ import { persist } from 'zustand/middleware'
 import { notesService, type TechNote } from '../services/notesService'
 
 export interface PBXInstance {
-  id: string;
-  name: string;
-  url: string;
-  tags?: string[];
-  notes?: TechNote[];
+  id: string
+  name: string
+  url: string
+  tags: string[]
+  notes?: TechNote[]
+  nickname?: string
+  extensionCount?: number | null
+  siteInfo?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface PBXState {
@@ -41,7 +46,15 @@ export const usePBXStore = create<PBXState>()(
       searchQuery: '',
 
       setPBXInstances: (instances) => {
-        set({ pbxInstances: instances })
+        set({
+          pbxInstances: instances.map(instance => ({
+            ...instance,
+            tags: instance.tags ?? [],
+            nickname: instance.nickname ?? '',
+            siteInfo: instance.siteInfo ?? '',
+            extensionCount: instance.extensionCount ?? null,
+          }))
+        })
       },
 
       selectPBX: (pbx) => {
@@ -79,7 +92,7 @@ export const usePBXStore = create<PBXState>()(
       addNote: async (pbxId, noteData) => {
         try {
           const newNote = await notesService.createNote(pbxId, noteData)
-          
+           
           set((state) => ({
             pbxInstances: state.pbxInstances.map(pbx => 
               pbx.id === pbxId 
@@ -146,7 +159,7 @@ export const usePBXStore = create<PBXState>()(
             pbx.id === pbxId 
               ? {
                   ...pbx,
-                  tags: [...new Set([...(pbx.tags || []), tag])]
+                  tags: [...new Set([...(pbx.tags ?? []), tag])]
                 }
               : pbx
           )
@@ -159,7 +172,7 @@ export const usePBXStore = create<PBXState>()(
             pbx.id === pbxId 
               ? {
                   ...pbx,
-                  tags: pbx.tags?.filter(t => t !== tag)
+                  tags: (pbx.tags ?? []).filter(t => t !== tag)
                 }
               : pbx
           )

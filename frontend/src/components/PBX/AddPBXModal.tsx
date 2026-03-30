@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Loader, Link } from 'lucide-react'
+import { X, Plus, Loader, Link, Sparkles, MapPin } from 'lucide-react'
 import { pbxService } from '../../services/pbxService'
 
 interface AddPBXModalProps {
@@ -12,6 +12,9 @@ interface AddPBXModalProps {
 const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [extensionCount, setExtensionCount] = useState('')
+  const [siteInfo, setSiteInfo] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -20,6 +23,9 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
     onClose()
     setName('')
     setUrl('')
+    setNickname('')
+    setExtensionCount('')
+    setSiteInfo('')
     setError('')
   }
 
@@ -28,9 +34,19 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
     setIsLoading(true)
     setError('')
     try {
+      const trimmedExtensions = extensionCount.trim()
+      const parsedExtensionCount = trimmedExtensions === '' ? null : Number(trimmedExtensions)
+
+      if (parsedExtensionCount !== null && !Number.isFinite(parsedExtensionCount)) {
+        throw new Error('Extension count must be a number')
+      }
+
       await pbxService.addPBX({
         name: name.trim(),
         url: url.trim().replace(/\/login\/?$/, ''),
+        nickname: nickname.trim() || undefined,
+        extensionCount: parsedExtensionCount ?? undefined,
+        siteInfo: siteInfo.trim() || undefined,
       })
       if (onSuccess) onSuccess()
       handleClose()
@@ -71,7 +87,7 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Client Name</label>
                 <input
@@ -101,6 +117,51 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
                 </p>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Nickname / Short Name</label>
+                  <div className="relative">
+                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400" />
+                    <input
+                      type="text"
+                      value={nickname}
+                      onChange={e => setNickname(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-secondary-500"
+                      placeholder="Optional shorthand"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Extension Count</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={extensionCount}
+                    onChange={e => setExtensionCount(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. 42"
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Leave blank if unknown.</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center space-x-2">
+                  <MapPin className="w-4 h-4 text-primary-400" />
+                  <span>Site / Location Info</span>
+                </label>
+                <textarea
+                  value={siteInfo}
+                  onChange={e => setSiteInfo(e.target.value)}
+                  className="w-full min-h-[80px] px-3 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Branch name, address, contact notes..."
+                  disabled={isLoading}
+                />
+              </div>
+
               {error && (
                 <div className="p-3 bg-error-500/10 border border-error-500/20 rounded-lg text-error-400 text-sm">
                   {error}
@@ -127,4 +188,3 @@ const AddPBXModal = ({ isOpen, onClose, onSuccess }: AddPBXModalProps) => {
 }
 
 export default AddPBXModal
-

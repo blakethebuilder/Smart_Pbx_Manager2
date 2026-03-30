@@ -7,6 +7,8 @@ import PBXQuickAccess from '../components/PBX/PBXQuickAccess'
 import AddPBXModal from '../components/PBX/AddPBXModal'
 import AnnouncementBox from '../components/AnnouncementBox'
 import QuickNoteModal from '../components/QuickNoteModal'
+import EditPBXModal from '../components/PBX/EditPBXModal'
+import type { PBXInstance } from '../stores/pbxStore'
 
 const Dashboard = () => {
   const { 
@@ -26,6 +28,8 @@ const Dashboard = () => {
   const [importError, setImportError] = useState<string | null>(null)
   const [quickNoteModalOpen, setQuickNoteModalOpen] = useState(false)
   const [quickNotePbxId, setQuickNotePbxId] = useState<string | null>(null)
+  const [editingPBX, setEditingPBX] = useState<PBXInstance | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const loadPBXInstances = async () => {
     try {
@@ -120,7 +124,27 @@ const Dashboard = () => {
     setQuickNotePbxId(pbxId)
     setQuickNoteModalOpen(true)
   }
-  
+
+  const handleEditPBX = (instance: PBXInstance) => {
+    setEditingPBX(instance)
+    setIsEditModalOpen(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditingPBX(null)
+  }
+
+  const handlePBXUpdated = async () => {
+    await loadPBXInstances()
+    if (editingPBX) {
+      const updated = usePBXStore.getState().pbxInstances.find(p => p.id === editingPBX.id)
+      if (updated) {
+        setEditingPBX(updated)
+      }
+    }
+  }
+
   const handlePostQuickNote = async (content: string) => {
     if (!content.trim() || !quickNotePbxId) return
     try {
@@ -190,6 +214,7 @@ const Dashboard = () => {
           instances={filteredInstances} 
           viewMode={viewMode} 
           onQuickNote={(id: string) => handleQuickNote(id)}
+          onEdit={handleEditPBX}
         />
       )}
 
@@ -242,6 +267,13 @@ const Dashboard = () => {
           onSubmit={handlePostQuickNote}
         />
       )}
+
+      <EditPBXModal
+        isOpen={isEditModalOpen}
+        pbx={editingPBX}
+        onClose={handleCloseEditModal}
+        onSaved={handlePBXUpdated}
+      />
     </div>
   )
 }

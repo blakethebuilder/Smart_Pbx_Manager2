@@ -68,7 +68,14 @@ const PBXQuickAccess = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span className="text-sm text-white">{pbx.name}</span>
+                  <div className="flex flex-col leading-tight text-left">
+                    <span className="text-sm text-white">
+                      {pbx.nickname && pbx.nickname.length > 0 ? pbx.nickname : pbx.name}
+                    </span>
+                    {pbx.nickname && pbx.nickname.length > 0 && (
+                      <span className="text-[10px] uppercase tracking-wide text-slate-500">{pbx.name}</span>
+                    )}
+                  </div>
                 </motion.button>
               ))}
             </div>
@@ -91,7 +98,14 @@ const PBXQuickAccess = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <span className="text-sm text-white">{pbx.name}</span>
+                  <div className="flex flex-col leading-tight text-left">
+                    <span className="text-sm text-white">
+                      {pbx.nickname && pbx.nickname.length > 0 ? pbx.nickname : pbx.name}
+                    </span>
+                    {pbx.nickname && pbx.nickname.length > 0 && (
+                      <span className="text-[10px] uppercase tracking-wide text-slate-500">{pbx.name}</span>
+                    )}
+                  </div>
                 </motion.button>
               ))}
             </div>

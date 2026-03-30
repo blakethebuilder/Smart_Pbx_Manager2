@@ -25,6 +25,59 @@ db.pragma('journal_mode = WAL');
 // Prepared statements - will be initialized after tables are created
 let statements = {};
 
+const normalizeTagsInput = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+        return value
+            .map(tag => String(tag).trim())
+            .filter(Boolean);
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return [];
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+                return parsed
+                    .map(tag => String(tag).trim())
+                    .filter(Boolean);
+            }
+        } catch (error) {
+            // ignore JSON parse errors, fallback to CSV parsing
+        }
+        return trimmed
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(Boolean);
+    }
+    return [];
+};
+
+const serializeTags = (value) => {
+    const normalized = normalizeTagsInput(value);
+    return normalized.length ? JSON.stringify(normalized) : null;
+};
+
+const formatPBXRow = (row) => {
+    if (!row) return null;
+    const tags = normalizeTagsInput(row.tags);
+    const extensionCount = row.extension_count !== null && row.extension_count !== undefined
+        ? Number(row.extension_count)
+        : null;
+
+    return {
+        id: row.id,
+        name: row.name,
+        url: row.url,
+        tags,
+        nickname: row.nickname || '',
+        extensionCount,
+        siteInfo: row.site_info || '',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+};
+
 // Create tables
 const initDatabase = () => {
     console.log('🗄️ Initializing SQLite database...');
@@ -36,6 +89,9 @@ const initDatabase = () => {
             name TEXT NOT NULL,
             url TEXT NOT NULL,
             tags TEXT,
+            nickname TEXT,
+            extension_count INTEGER,
+            site_info TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -83,6 +139,18 @@ const initDatabase = () => {
         console.log('📦 Migrating pbx_instances table: adding tags column...');
         db.exec("ALTER TABLE pbx_instances ADD COLUMN tags TEXT");
     }
+    if (!pbxColumns.has('nickname')) {
+        console.log('📦 Migrating pbx_instances table: adding nickname column...');
+        db.exec("ALTER TABLE pbx_instances ADD COLUMN nickname TEXT");
+    }
+    if (!pbxColumns.has('extension_count')) {
+        console.log('📦 Migrating pbx_instances table: adding extension_count column...');
+        db.exec("ALTER TABLE pbx_instances ADD COLUMN extension_count INTEGER DEFAULT 0");
+    }
+    if (!pbxColumns.has('site_info')) {
+        console.log('📦 Migrating pbx_instances table: adding site_info column...');
+        db.exec("ALTER TABLE pbx_instances ADD COLUMN site_info TEXT");
+    }
 
     let usersTableInfo = db.prepare("PRAGMA table_info(users)").all();
     let userColumns = new Set(usersTableInfo.map(col => col.name));
@@ -115,8 +183,8 @@ const initDatabase = () => {
     try {
         statements = {
             // PBX instances
-            insertPBX: db.prepare(`INSERT INTO pbx_instances (id, name, url, tags) VALUES (?, ?, ?, ?)`),
-            updatePBX: db.prepare(`UPDATE pbx_instances SET name = ?, url = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`),
+            insertPBX: db.prepare(`INSERT INTO pbx_instances (id, name, url, tags, nickname, extension_count, site_info) VALUES (?, ?, ?, ?, ?, ?, ?)`),
+            updatePBX: db.prepare(`UPDATE pbx_instances SET name = ?, url = ?, tags = ?, nickname = ?, extension_count = ?, site_info = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`),
             deletePBX: db.prepare(`DELETE FROM pbx_instances WHERE id = ?`),
             getPBXById: db.prepare(`SELECT * FROM pbx_instances WHERE id = ?`),
             getAllPBX: db.prepare(`SELECT * FROM pbx_instances ORDER BY name ASC`),
@@ -202,11 +270,27 @@ export const dbOperations = {
     
     // PBX operations
     createPBX: (pbx) => {
-        return statements.insertPBX.run(pbx.id, pbx.name, pbx.url, pbx.tags);
+        return statements.insertPBX.run(
+            pbx.id,
+            pbx.name,
+            pbx.url,
+            serializeTags(pbx.tags),
+            pbx.nickname || null,
+            typeof pbx.extensionCount === 'number' ? pbx.extensionCount : null,
+            pbx.siteInfo || null
+        );
     },
     
     updatePBX: (id, pbx) => {
-        return statements.updatePBX.run(pbx.name, pbx.url, pbx.tags, id);
+        return statements.updatePBX.run(
+            pbx.name,
+            pbx.url,
+            serializeTags(pbx.tags),
+            pbx.nickname || null,
+            typeof pbx.extensionCount === 'number' ? pbx.extensionCount : null,
+            pbx.siteInfo || null,
+            id
+        );
     },
     
     deletePBX: (id) => {
@@ -214,16 +298,17 @@ export const dbOperations = {
     },
     
     getPBXById: (id) => {
-        return statements.getPBXById.get(id);
+        const row = statements.getPBXById.get(id);
+        if (!row) return null;
+        const pbx = formatPBXRow(row);
+        pbx.notes = dbOperations.getNotesByPBX(id);
+        return pbx;
     },
     
     getAllPBX: () => {
         const rows = statements.getAllPBX.all();
         return rows.map(row => {
-            const pbx = { ...row };
-            try {
-                if (pbx.tags) pbx.tags = JSON.parse(pbx.tags);
-            } catch (e) { pbx.tags = []; }
+            const pbx = formatPBXRow(row);
             pbx.notes = dbOperations.getNotesByPBX(row.id);
             return pbx;
         });
