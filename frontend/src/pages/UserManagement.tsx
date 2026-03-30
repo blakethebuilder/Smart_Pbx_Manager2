@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Trash2, Shield, UserPlus, ShieldAlert, Plus, KeyRound } from 'lucide-react'
+import { Users, Trash2, Shield, UserPlus, ShieldAlert, Plus } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 
 interface User {
@@ -14,12 +14,8 @@ const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [newUsername, setNewUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [isCreating, setIsCreating] = useState(false)
-
-  // New state for password management
-  const [newTeamPassword, setNewTeamPassword] = useState('')
-  const [newAdminPassword, setNewAdminPassword] = useState('')
-  const [isSavingPasswords, setIsSavingPasswords] = useState(false)
 
   const loadUsers = async () => {
     try {
@@ -43,19 +39,23 @@ const UserManagement = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newUsername.trim()) return
+    if (!newUsername.trim() || !newPassword.trim()) return
 
     setIsCreating(true)
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: newUsername.trim() })
+        body: JSON.stringify({ 
+          username: newUsername.trim(), 
+          password: newPassword.trim()
+        })
       })
 
       if (res.ok) {
         setNewUsername('')
-        await loadUsers() // Refresh the user list
+        setNewPassword('')
+        await loadUsers()
       } else {
         const data = await res.json()
         alert(data.error || 'Failed to create user')
@@ -64,33 +64,6 @@ const UserManagement = () => {
       alert('Network error creating user')
     } finally {
       setIsCreating(false)
-    }
-  }
-
-  const handleChangePasswords = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSavingPasswords(true)
-    try {
-      const res = await fetch('/api/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          newPassword: newTeamPassword, 
-          newAdminPassword: newAdminPassword
-        })
-      })
-
-      if (res.ok) {
-        alert('Password change request received. Note: Environment variables must be updated manually on the server.');
-        setNewTeamPassword('')
-        setNewAdminPassword('')
-      } else {
-        alert('Failed to process password change.')
-      }
-    } catch (err) {
-      alert('Network error during password change.')
-    } finally {
-      setIsSavingPasswords(false)
     }
   }
 
@@ -142,22 +115,31 @@ const UserManagement = () => {
             <h2 className="text-lg font-semibold text-white">Add New Technician</h2>
           </div>
           
-          <form onSubmit={handleCreateUser} className="flex gap-3">
-            <div className="flex-1">
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <input
                 type="text"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 placeholder="Technician Name / Username"
-                className="w-full px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex-1 px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                disabled={isCreating}
+                required
+              />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Set Initial Password"
+                className="flex-1 px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 disabled={isCreating}
                 required
               />
             </div>
             <button
               type="submit"
-              disabled={isCreating || !newUsername.trim()}
-              className="btn-primary flex items-center space-x-2 whitespace-nowrap"
+              disabled={isCreating || !newUsername.trim() || !newPassword.trim()}
+              className="w-full btn-primary flex items-center justify-center space-x-2 whitespace-nowrap"
             >
               {isCreating ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -212,40 +194,7 @@ const UserManagement = () => {
                           user.role === 'admin' ? 'bg-primary-500/20 text-primary-400' : 'bg-slate-700 text-slate-300'
                         }`}>
                           <Users className="w-4 h-4" />
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex items-center space-x-2 mb-6">
-            <KeyRound className="w-5 h-5 text-primary-400" />
-            <h2 className="text-lg font-semibold text-white">Change Passwords</h2>
-          </div>
-          <form onSubmit={handleChangePasswords} className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">New Team Password</label>
-              <input
-                type="password"
-                value={newTeamPassword}
-                onChange={(e) => setNewTeamPassword(e.target.value)}
-                placeholder="Shared password for all technicians"
-                className="w-full px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">New Admin Password</label>
-              <input
-                type="password"
-                value={newAdminPassword}
-                onChange={(e) => setNewAdminPassword(e.target.value)}
-                placeholder="New password for blakeAdmin"
-                className="w-full px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button type="submit" disabled={isSavingPasswords} className="btn-primary">
-                {isSavingPasswords ? 'Saving...' : 'Save Passwords'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+                        </div>
                         <span className="font-medium text-white">{user.username}</span>
                       </div>
                     </td>
@@ -284,8 +233,7 @@ const UserManagement = () => {
           <h3 className="font-bold">Technician Management Info</h3>
         </div>
         <p className="text-slate-400 text-sm">
-          Only administrators can register new technicians. Once registered, a technician can log in using their name and the shared team password. 
-          As an administrator, you can revoke their access at any time by deleting their record from the list above.
+          As an administrator, you can add new technicians and assign them a unique password. They can then log in using their own credentials. You can revoke their access at any time by deleting their record from the list above.
         </p>
       </div>
     </div>

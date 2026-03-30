@@ -79,6 +79,7 @@ const initDatabase = () => {
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
             role TEXT DEFAULT 'tech', -- 'admin' or 'tech'
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -114,7 +115,7 @@ const initDatabase = () => {
             getAllAnnouncements: db.prepare(`SELECT * FROM announcements ORDER BY pinned DESC, created_at DESC`),
 
             // User management
-            insertUser: db.prepare(`INSERT OR IGNORE INTO users (id, username, role) VALUES (?, ?, ?)`),
+            insertUser: db.prepare(`INSERT OR IGNORE INTO users (id, username, password, role) VALUES (?, ?, ?, ?)`),
             getUserByUsername: db.prepare(`SELECT * FROM users WHERE username = ?`),
             getAllUsers: db.prepare(`SELECT * FROM users ORDER BY username ASC`),
             deleteUser: db.prepare(`DELETE FROM users WHERE id = ?`),
@@ -226,8 +227,8 @@ export const dbOperations = {
     getUserByUsername: (username) => {
         return statements.getUserByUsername.get(username);
     },
-    createUser: (id, username, role = 'tech') => {
-        return statements.insertUser.run(id, username, role);
+    createUser: (user) => {
+        return statements.insertUser.run(user.id, user.username, user.password, user.role);
     },
     getAllUsers: () => {
         return statements.getAllUsers.all();
