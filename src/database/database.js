@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import bcrypt from 'bcrypt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,16 +29,6 @@ let statements = {};
 const initDatabase = () => {
     console.log('🗄️ Initializing SQLite database...');
     
-    // Check if migration is needed for pbx_instances
-    const tableInfo = db.prepare("PRAGMA table_info(pbx_instances)").all();
-    if (tableInfo.length > 0) {
-        const hasTags = tableInfo.some(col => col.name === 'tags');
-        if (!hasTags) {
-            console.log('📦 Migrating pbx_instances table: adding tags column...');
-            db.exec("ALTER TABLE pbx_instances ADD COLUMN tags TEXT");
-        }
-    }
-
     // PBX instances table (Simplified for hotlinks)
     db.exec(`
         CREATE TABLE IF NOT EXISTS pbx_instances (
@@ -85,6 +76,34 @@ const initDatabase = () => {
         )
     `);
 
+    // Schema migrations for existing installations
+    const pbxTableInfo = db.prepare("PRAGMA table_info(pbx_instances)").all();
+    const pbxColumns = new Set(pbxTableInfo.map(col => col.name));
+    if (!pbxColumns.has('tags')) {
+        console.log('📦 Migrating pbx_instances table: adding tags column...');
+        db.exec("ALTER TABLE pbx_instances ADD COLUMN tags TEXT");
+    }
+
+    let usersTableInfo = db.prepare("PRAGMA table_info(users)").all();
+    let userColumns = new Set(usersTableInfo.map(col => col.name));
+    if (!userColumns.has('password')) {
+        console.log('📦 Migrating users table: adding password column...');
+        db.exec("ALTER TABLE users ADD COLUMN password TEXT");
+        db.exec("UPDATE users SET password = '' WHERE password IS NULL");
+    }
+    if (!userColumns.has('role')) {
+        console.log('📦 Migrating users table: adding role column...');
+        db.exec("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'tech'");
+        db.exec("UPDATE users SET role = 'tech' WHERE role IS NULL OR role = ''");
+    }
+
+    // Refresh metadata after migrations
+    usersTableInfo = db.prepare("PRAGMA table_info(users)").all();
+    userColumns = new Set(usersTableInfo.map(col => col.name));
+    if (!userColumns.has('password')) {
+        throw new Error('Users table migration failed: missing password column');
+    }
+
     // Create indexes for better performance
     db.exec(`
         CREATE INDEX IF NOT EXISTS idx_notes_pbx_id ON pbx_notes(pbx_id);
@@ -121,8 +140,54 @@ const initDatabase = () => {
             deleteUser: db.prepare(`DELETE FROM users WHERE id = ?`),
         };
 
-        // Create default admin
-        statements.insertUser.run('admin-id-1', 'blakeAdmin', 'admin');
+        const ensureDefaultAdminUser = () => {
+            const defaultUsername = (process.env.DEFAULT_ADMIN_USERNAME || 'blakeAdmin').trim();
+            const masterPassword = (process.env.MASTER_PASSWORD || '').trim();
+            const passwordIsPlaceholder = masterPassword === '' || masterPassword === 'CHANGE_ME_IN_PRODUCTION';
+            const activePassword = passwordIsPlaceholder ? 'admin' : masterPassword;
+
+            if (passwordIsPlaceholder) {
+                console.warn('⚠️ MASTER_PASSWORD is not set or is using the default placeholder. Update it for production deployments.');
+            }
+
+            const existingAdmin = statements.getUserByUsername.get(defaultUsername);
+
+            const updateAdminCredentials = (id) => {
+                const hashedPassword = bcrypt.hashSync(activePassword, 10);
+                db.prepare(`UPDATE users SET password = ?, role = 'admin' WHERE id = ?`).run(hashedPassword, id);
+                return hashedPassword;
+            };
+
+            if (!existingAdmin) {
+                const hashedPassword = bcrypt.hashSync(activePassword, 10);
+                statements.insertUser.run('admin-id-1', defaultUsername, hashedPassword, 'admin');
+                console.log(`✅ Default admin user created (username: ${defaultUsername}).`);
+                return;
+            }
+
+            let passwordNeedsUpdate = false;
+            if (!existingAdmin.password || existingAdmin.password.length < 10 || !existingAdmin.password.startsWith('$2')) {
+                passwordNeedsUpdate = true;
+            } else if (!passwordIsPlaceholder) {
+                try {
+                    if (!bcrypt.compareSync(activePassword, existingAdmin.password)) {
+                        passwordNeedsUpdate = true;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Unable to verify existing admin password hash, refreshing it.');
+                    passwordNeedsUpdate = true;
+                }
+            }
+
+            if (passwordNeedsUpdate) {
+                updateAdminCredentials(existingAdmin.id);
+                console.log(`🔄 Admin password hash refreshed for user '${defaultUsername}'.`);
+            } else if (existingAdmin.role !== 'admin') {
+                db.prepare(`UPDATE users SET role = 'admin' WHERE id = ?`).run(existingAdmin.id);
+            }
+        };
+
+        ensureDefaultAdminUser();
         console.log('✅ Database initialized successfully');
     } catch (error) {
         console.error('❌ Failed to initialize prepared statements:', error.message);
