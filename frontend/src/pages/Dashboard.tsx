@@ -137,12 +137,7 @@ const Dashboard = () => {
 
   const handlePBXUpdated = async () => {
     await loadPBXInstances()
-    if (editingPBX) {
-      const updated = usePBXStore.getState().pbxInstances.find(p => p.id === editingPBX.id)
-      if (updated) {
-        setEditingPBX(updated)
-      }
-    }
+    handleCloseEditModal()
   }
 
   const handlePostQuickNote = async (content: string) => {

@@ -56,8 +56,8 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', o
               <div className="w-8 h-8 flex items-center justify-center">
                 <img src="/logo.png" alt="SMART PBX MANAGER logo" className="h-8 w-8"/>
               </div>
-              <div>
-                <h1 className="text-lg font-bold text-white">SMART PBX MANAGER</h1>
+              <div className="leading-tight">
+                <h1 className="text-sm font-semibold text-white tracking-[0.18em] uppercase">Smart PBX Manager</h1>
                 <p className="text-xs text-slate-400">Home</p>
               </div>
             </motion.div>
