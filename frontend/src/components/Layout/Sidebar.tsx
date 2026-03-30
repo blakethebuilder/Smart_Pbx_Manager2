@@ -6,7 +6,6 @@ import {
   ChevronLeft, 
   ChevronRight,
   X,
-  Shield,
   BookOpen
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -54,11 +53,11 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', o
               exit={{ opacity: 0 }}
               className="flex items-center space-x-3"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img src="/logo.png" alt="Smart Integrate Logo" className="h-8 w-8"/>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">MSP PBX</h1>
+                <h1 className="text-lg font-bold text-white">Smart PBX</h1>
                 <p className="text-xs text-slate-400">Home</p>
               </div>
             </motion.div>

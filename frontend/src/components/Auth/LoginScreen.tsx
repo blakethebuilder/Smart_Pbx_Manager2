@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Lock, Shield, User } from 'lucide-react'
+import { Lock, User } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 
 const LoginScreen = () => {
@@ -27,16 +27,11 @@ const LoginScreen = () => {
       >
         <div className="card p-8 space-y-6">
           <div className="text-center space-y-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="mx-auto w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center"
-            >
-              <Shield className="w-8 h-8 text-white" />
-            </motion.div>
+              <div className="mx-auto w-20 h-20 flex items-center justify-center">
+                <img src="/logo.png" alt="Smart Integrate Logo" className="w-20 h-20" />
+              </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">MSP PBX Dashboard</h1>
+              <h1 className="text-2xl font-bold text-white">Smart PBX Manager</h1>
               <p className="text-slate-400 mt-2">Sign in to access the dashboard</p>
             </div>
           </div>
