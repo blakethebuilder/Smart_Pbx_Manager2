@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Trash2, Shield, UserPlus, ShieldAlert, Plus } from 'lucide-react'
+import { Users, Trash2, Shield, UserPlus, ShieldAlert, Plus, KeyRound } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 
 interface User {
@@ -14,7 +14,12 @@ const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [newUsername, setNewUsername] = useState('')
-  const [isCreating, setIsSaving] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+
+  // New state for password management
+  const [newTeamPassword, setNewTeamPassword] = useState('')
+  const [newAdminPassword, setNewAdminPassword] = useState('')
+  const [isSavingPasswords, setIsSavingPasswords] = useState(false)
 
   const loadUsers = async () => {
     try {
@@ -40,7 +45,7 @@ const UserManagement = () => {
     e.preventDefault()
     if (!newUsername.trim()) return
 
-    setIsSaving(true)
+    setIsCreating(true)
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
@@ -50,7 +55,7 @@ const UserManagement = () => {
 
       if (res.ok) {
         setNewUsername('')
-        loadUsers()
+        await loadUsers() // Refresh the user list
       } else {
         const data = await res.json()
         alert(data.error || 'Failed to create user')
@@ -58,7 +63,34 @@ const UserManagement = () => {
     } catch (err) {
       alert('Network error creating user')
     } finally {
-      setIsSaving(false)
+      setIsCreating(false)
+    }
+  }
+
+  const handleChangePasswords = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSavingPasswords(true)
+    try {
+      const res = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          newPassword: newTeamPassword, 
+          newAdminPassword: newAdminPassword
+        })
+      })
+
+      if (res.ok) {
+        alert('Password change request received. Note: Environment variables must be updated manually on the server.');
+        setNewTeamPassword('')
+        setNewAdminPassword('')
+      } else {
+        alert('Failed to process password change.')
+      }
+    } catch (err) {
+      alert('Network error during password change.')
+    } finally {
+      setIsSavingPasswords(false)
     }
   }
 
@@ -180,7 +212,40 @@ const UserManagement = () => {
                           user.role === 'admin' ? 'bg-primary-500/20 text-primary-400' : 'bg-slate-700 text-slate-300'
                         }`}>
                           <Users className="w-4 h-4" />
-                        </div>
+        <div className="p-6 border-b border-slate-700">
+          <div className="flex items-center space-x-2 mb-6">
+            <KeyRound className="w-5 h-5 text-primary-400" />
+            <h2 className="text-lg font-semibold text-white">Change Passwords</h2>
+          </div>
+          <form onSubmit={handleChangePasswords} className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">New Team Password</label>
+              <input
+                type="password"
+                value={newTeamPassword}
+                onChange={(e) => setNewTeamPassword(e.target.value)}
+                placeholder="Shared password for all technicians"
+                className="w-full px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">New Admin Password</label>
+              <input
+                type="password"
+                value={newAdminPassword}
+                onChange={(e) => setNewAdminPassword(e.target.value)}
+                placeholder="New password for blakeAdmin"
+                className="w-full px-4 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button type="submit" disabled={isSavingPasswords} className="btn-primary">
+                {isSavingPasswords ? 'Saving...' : 'Save Passwords'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
                         <span className="font-medium text-white">{user.username}</span>
                       </div>
                     </td>

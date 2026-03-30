@@ -25,8 +25,10 @@ const Sidebar = ({ collapsed, onToggleCollapse, onClose, currentPage = 'home', o
   const menuItems = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'notes', icon: BookOpen, label: 'All Notes' },
-    ...(role === 'admin' ? [{ id: 'user-management', icon: Users, label: 'Technicians' }] : []),
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    ...(role === 'admin' ? [
+      { id: 'user-management', icon: Users, label: 'Technicians' },
+      { id: 'settings', icon: Settings, label: 'Settings' },
+    ] : []),
   ]
 
   const handleNavigation = (pageId: string) => {

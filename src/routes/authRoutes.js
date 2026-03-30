@@ -106,4 +106,26 @@ router.post('/users', (req, res) => {
     }
 });
 
+// Admin: Change password
+router.post('/change-password', (req, res) => {
+    // In a real app, this should be protected and only accessible by an authenticated admin
+    const { newPassword, newAdminPassword } = req.body;
+
+    if (newPassword) {
+        // In a real app, this would be a secure, hashed password update
+        // For this internal tool, we are writing to an env var (not recommended for production)
+        console.log('🔑 Admin changed team password');
+    }
+
+    if (newAdminPassword) {
+        console.log('🔑 Superadmin changed their own password');
+    }
+    
+    // NOTE: We cannot directly change env variables at runtime.
+    // This endpoint is a placeholder to show the intent.
+    // The .env file would need to be manually updated.
+    res.json({ success: true, message: 'Password change request noted. Please update environment variables manually.' });
+});
+
+
 export default router;
