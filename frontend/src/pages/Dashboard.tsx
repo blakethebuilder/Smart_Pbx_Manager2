@@ -8,6 +8,7 @@ import AddPBXModal from '../components/PBX/AddPBXModal'
 import AnnouncementBox from '../components/AnnouncementBox'
 import QuickNoteModal from '../components/QuickNoteModal'
 import EditPBXModal from '../components/PBX/EditPBXModal'
+import PBXDetailsModal from '../components/PBX/PBXDetailsModal'
 import type { PBXInstance } from '../stores/pbxStore'
 
 const Dashboard = () => {
@@ -16,7 +17,8 @@ const Dashboard = () => {
     searchQuery,
     favorites,
     setPBXInstances,
-    addNote 
+    addNote,
+    selectPBX,
   } = usePBXStore()
   
   const [showAddModal, setShowAddModal] = useState(false)
@@ -30,6 +32,7 @@ const Dashboard = () => {
   const [quickNotePbxId, setQuickNotePbxId] = useState<string | null>(null)
   const [editingPBX, setEditingPBX] = useState<PBXInstance | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [detailsPBX, setDetailsPBX] = useState<PBXInstance | null>(null)
 
   const loadPBXInstances = async () => {
     try {
@@ -128,6 +131,7 @@ const Dashboard = () => {
   const handleEditPBX = (instance: PBXInstance) => {
     setEditingPBX(instance)
     setIsEditModalOpen(true)
+    setDetailsPBX(null)
   }
 
   const handleCloseEditModal = () => {
@@ -138,6 +142,19 @@ const Dashboard = () => {
   const handlePBXUpdated = async () => {
     await loadPBXInstances()
     handleCloseEditModal()
+  }
+
+  const handleOpenDetails = (pbx: PBXInstance) => {
+    setDetailsPBX(pbx)
+  }
+
+  const handleCloseDetails = () => {
+    setDetailsPBX(null)
+  }
+
+  const handleViewNotes = (pbx: PBXInstance) => {
+    selectPBX(pbx)
+    setDetailsPBX(null)
   }
 
   const handlePostQuickNote = async (content: string) => {
@@ -210,6 +227,7 @@ const Dashboard = () => {
           viewMode={viewMode} 
           onQuickNote={(id: string) => handleQuickNote(id)}
           onEdit={handleEditPBX}
+          onOpenDetails={handleOpenDetails}
         />
       )}
 
@@ -268,6 +286,14 @@ const Dashboard = () => {
         pbx={editingPBX}
         onClose={handleCloseEditModal}
         onSaved={handlePBXUpdated}
+      />
+
+      <PBXDetailsModal
+        pbx={detailsPBX}
+        isOpen={Boolean(detailsPBX)}
+        onClose={handleCloseDetails}
+        onViewNotes={handleViewNotes}
+        onEdit={handleEditPBX}
       />
     </div>
   )

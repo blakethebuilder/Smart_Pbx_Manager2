@@ -19,11 +19,11 @@ interface PBXCardProps {
   viewMode?: 'grid' | 'list'
   onQuickNote: (pbxId: string) => void
   onEdit: (pbx: PBXInstance) => void
+  onOpenDetails: (pbx: PBXInstance) => void
 }
 
-const PBXCard = ({ pbx, viewMode = 'grid', onQuickNote, onEdit }: PBXCardProps) => {
+const PBXCard = ({ pbx, viewMode = 'grid', onQuickNote, onEdit, onOpenDetails }: PBXCardProps) => {
   const {
-    selectPBX,
     favorites,
     addToFavorites,
     removeFromFavorites
@@ -63,7 +63,7 @@ const PBXCard = ({ pbx, viewMode = 'grid', onQuickNote, onEdit }: PBXCardProps) 
   }
 
   const handleCardClick = () => {
-    selectPBX(pbx)
+    onOpenDetails(pbx)
   }
 
   const hostname = useMemo(() => {
