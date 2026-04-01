@@ -8,6 +8,7 @@ import Layout from './components/Layout/Layout'
 import Dashboard from './pages/Dashboard'
 import Notes from './pages/Notes'
 import UserManagement from './pages/UserManagement'
+import Settings from './pages/Settings'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
@@ -47,6 +48,8 @@ function App() {
         return <Notes />
       case 'user-management':
         return <UserManagement />
+      case 'settings':
+        return <Settings />
       default:
         return <Dashboard />
     }
