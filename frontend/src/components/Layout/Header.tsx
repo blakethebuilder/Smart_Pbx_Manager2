@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Menu, User, LogOut } from 'lucide-react'
+import { Menu, User, LogOut, Search } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { usePBXStore } from '../../stores/pbxStore'
 
@@ -11,18 +11,28 @@ interface HeaderProps {
 const Header = ({ onMenuClick }: HeaderProps) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const { logout, techName } = useAuthStore()
-  const { pbxInstances } = usePBXStore()
+  const { pbxInstances, searchQuery, setSearchQuery } = usePBXStore()
 
   const totalCount = pbxInstances.length
 
   return (
     <header className="bg-dark-800 border-b border-slate-700 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-1 min-w-0">
           <button onClick={onMenuClick} className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
             <Menu className="w-5 h-5" />
           </button>
-          <div className="text-sm text-slate-400 hidden md:block">{totalCount} Hotlinks Active</div>
+          <div className="text-sm text-slate-400 hidden xl:block whitespace-nowrap">{totalCount} Hotlinks Active</div>
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by client or URL..."
+              className="w-full pl-9 pr-3 py-2 bg-dark-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+            />
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
