@@ -1,0 +1,25 @@
+:root {
+  --bg: #0b1020;
+  --card: #141a2b;
+  --text: #e8e8f0;
+  --muted: #9aa3af;
+}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; font-family: Arial, sans-serif; background: #0b0f1a; color: #e6e6e6; }
+.app { display: grid; grid-template-columns: 260px 1fr; height: 100%; }
+.sidebar { padding: 16px; border-right: 1px solid #2a2a2a; background: #11131a; }
+.sidebar h2 { margin: 0 0 8px 0; font-size: 1.2rem; }
+.sidebar ul { list-style: none; padding: 0; margin: 0; }
+.sidebar li { padding: 6px 8px; cursor: pointer; border-radius: 4px; }
+.sidebar li.active { background: #222a5f; }
+.content { padding: 24px; overflow: auto; }
+.login-panel { max-width: 320px; margin: 100px auto; padding: 20px; border: 1px solid #333; border-radius: 8px; background: #14182a; }
+.login-panel input { width: 100%; padding: 8px; margin-top: 6px; margin-bottom: 12px; border-radius: 4px; border: 1px solid #333; background: #1f2540; color: #fff; }
+.login-panel button { width: 100%; padding: 8px; border-radius: 4px; border: 0; background: #4a7bd8; color: white; }
+.error { color: #ff6b6b; margin-top: 8px; }
+.client-detail { background: #11131a; padding: 16px; border-radius: 6px; border: 1px solid #333; }
+.section { margin-top: 12px; padding: 8px; border-top: 1px solid #333; }
+.form-inline { display: flex; gap: 8px; margin-top: 8px; }
+.form-inline input { padding: 6px; border-radius: 4px; border: 1px solid #333; }
+.form-inline button { padding: 6px 10px; border-radius: 4px; border: 0; background: #2a7bd8; color: white; }
+.welcome { font-size: 1.1rem; color: var(--muted); }

@@ -43,7 +43,25 @@ services:
     restart: unless-stopped
     environment:
       - REACT_APP_API_URL=http://pbx-backend:8547
+      - VITE_API_BASE_URL=http://pbx-client-services:3000
 
+  pbx-client-services:
+    build:
+      context: ./services/clients-service
+      dockerfile: Dockerfile
+    ports:
+      - "8550:3000"
+    environment:
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-CHANGE_ME_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-CHANGE_ME_JWT_SECRET}
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+    volumes:
+      - pbx_data:/app/data
+      - pbx_logs:/app/logs
+    networks:
+      - pbx-network
+    restart: unless-stopped
 volumes:
   pbx_data:
     driver: local

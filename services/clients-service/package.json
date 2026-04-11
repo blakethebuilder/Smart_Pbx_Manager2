@@ -1,0 +1,17 @@
+{
+  "name": "clients-service",
+  "version": "0.1.0",
+  "description": "DB-backed Clients API for MSP dashboard (PBX + services)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^9.6.0",
+    "uuid": "^9.0.0",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.3"
+  }
+}
