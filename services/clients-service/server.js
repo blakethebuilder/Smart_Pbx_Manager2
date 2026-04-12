@@ -1,10 +1,12 @@
 const express = require('express')
+const cors = require('cors')
 const app = express()
 const cors = require('cors')
 const { init } = require('./db')
 const authRouter = require('./routes/auth')
 const authMiddleware = require('./middleware/auth')
 
+app.use(cors())
 app.use(cors())
 app.use(express.json())
 
