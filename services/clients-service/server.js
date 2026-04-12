@@ -18,6 +18,13 @@ app.use('/api/auth', authRouter)
 
 // Initialize DB and mount routes
 init()
+// Seed initial test client on first run
+try {
+  const seed = require('./scripts/seed')
+  seed.seed()
+} catch (e) {
+  console.error('Seed script failed to run:', e)
+}
 try {
   const clientsRouter = require('./routes/clients')
   // Protect all client routes with auth middleware

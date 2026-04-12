@@ -7,7 +7,9 @@ export default function LoginPanel({ onLogin }: { onLogin: (token: string) => vo
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    const res = await fetch('/api/auth/login', {
+    const base = (import.meta as any).env?.VITE_API_BASE_URL || ''
+    const loginUrl = base ? `${base}/api/auth/login` : '/api/auth/login'
+    const res = await fetch(loginUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: u, password: p }),
