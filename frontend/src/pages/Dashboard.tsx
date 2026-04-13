@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Grid, List, FileUp, X } from 'lucide-react'
+import { Plus, Grid, List, FileUp, X, RefreshCw } from 'lucide-react'
 import { usePBXStore } from '../stores/pbxStore'
 import { pbxService } from '../services/pbxService'
 import PBXGrid from '../components/PBX/PBXGrid'
@@ -187,6 +187,10 @@ const Dashboard = () => {
           <button onClick={() => setShowImportModal(true)} className="btn-secondary flex items-center space-x-2">
             <FileUp className="w-4 h-4" />
             <span>Import CSV</span>
+          </button>
+          <button onClick={loadPBXInstances} className="btn-secondary flex items-center space-x-2">
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh</span>
           </button>
           <button onClick={handleDeduplicate} className="btn-secondary bg-slate-700 hover:bg-slate-600">Deduplicate</button>
           <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center space-x-2">
