@@ -174,8 +174,8 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Home</h1>
-          <p className="text-slate-400 mt-1">Manage your client PBX hotlinks</p>
+          <h1 className="text-3xl font-bold text-white">PBX Dashboard</h1>
+          <p className="text-slate-400 mt-1">Overview of PBX instances and quick access</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex bg-dark-800 rounded-lg p-1">
