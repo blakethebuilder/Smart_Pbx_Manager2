@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink, FileText, Pencil, MapPin, Phone, Tag } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { pbxService } from '../../services/pbxService'
+import React from 'react'
+// pbxService removed; edits handled via dedicated modal
 import { PBXInstance } from '../../stores/pbxStore'
 
 interface PBXDetailsModalProps {
