@@ -24,6 +24,8 @@ const EditPBXModal = ({ isOpen, pbx, onClose, onSaved }: EditPBXModalProps) => {
   const [nickname, setNickname] = useState('')
   const [extensionCount, setExtensionCount] = useState('')
   const [siteInfo, setSiteInfo] = useState('')
+  const [telephone, setTelephone] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -34,7 +36,16 @@ const EditPBXModal = ({ isOpen, pbx, onClose, onSaved }: EditPBXModalProps) => {
       setUrl(pbx.url)
       setNickname(pbx.nickname ?? '')
       setExtensionCount(pbx.extensionCount != null ? String(pbx.extensionCount) : '')
-      setSiteInfo(pbx.siteInfo ?? '')
+      const base = pbx.siteInfo ?? ''
+      setSiteInfo(base)
+      try {
+        const parsed = typeof base === 'string' ? JSON.parse(base) : base
+        setTelephone(parsed?.telephone ?? '')
+        setWhatsapp(parsed?.whatsapp ?? '')
+      } catch {
+        setTelephone('')
+        setWhatsapp('')
+      }
       setError('')
       setSuccessMessage('')
     }
@@ -65,15 +76,18 @@ const EditPBXModal = ({ isOpen, pbx, onClose, onSaved }: EditPBXModalProps) => {
     setIsSaving(true)
     setError('')
     // Accept any string for SiteInfo (JSON or plain text)
-    const trimmedSiteInfo = siteInfo.trim()
-    // No strict validation; allow any string (JSON or plain text)
+    const rawSiteInfo = siteInfo.trim()
+    const extraLines = [] as string[]
+    if (telephone && telephone.trim()) extraLines.push(`Telephone: ${telephone.trim()}`)
+    if (whatsapp && whatsapp.trim()) extraLines.push(`WhatsApp: ${whatsapp.trim()}`)
+    const finalSiteInfo = rawSiteInfo ? (rawSiteInfo + "\n" + extraLines.join("\n")) : extraLines.join("\n")
     try {
       await pbxService.updatePBX(pbx.id, {
         name: name.trim(),
         url: url.trim().replace(/\/login\/?$/, ''),
         nickname: nickname.trim(),
         extensionCount: normalizedExtension,
-        siteInfo: trimmedSiteInfo,
+        siteInfo: finalSiteInfo,
         tags: pbx.tags,
       })
       setSuccessMessage('Client details updated successfully.')
@@ -206,6 +220,29 @@ const EditPBXModal = ({ isOpen, pbx, onClose, onSaved }: EditPBXModalProps) => {
                   className="w-full min-h-[110px] px-3 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Deployment notes, address, rack location, on-site contacts..."
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Telephone</label>
+                  <input
+                    type="text"
+                    value={telephone}
+                    onChange={e => setTelephone(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Telephone number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">WhatsApp</label>
+                  <input
+                    type="text"
+                    value={whatsapp}
+                    onChange={e => setWhatsapp(e.target.value)}
+                    className="w-full px-3 py-2 bg-dark-900 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="WhatsApp contact"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-dark-900/40 border border-slate-700 rounded-lg p-4 text-xs text-slate-400">

@@ -89,7 +89,7 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetai
                   if (info.raw && info.raw.length) {
                     return <div className="text-sm text-slate-200">{info.raw}</div>
                   }
-                  if (!info.internet && !info.supplier && !info.serviceUsername) {
+                  if (!info.internet && !info.supplier && !info.serviceUsername && !info.telephone && !info.whatsapp) {
                     return <div className="text-sm text-slate-200">No site information captured yet.</div>
                   }
                   return (
@@ -97,6 +97,10 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetai
                       <div className="text-sm text-slate-200"><strong>Internet</strong>: {info.internet || '—'}</div>
                       <div className="text-sm text-slate-200"><strong>Supplier</strong>: {info.supplier || '—'}</div>
                       <div className="text-sm text-slate-200"><strong>Username</strong>: {info.serviceUsername || ''}</div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div className="text-sm text-slate-200"><strong>Telephone</strong>: {info.telephone || ''}</div>
+                      <div className="text-sm text-slate-200"><strong>WhatsApp</strong>: {info.whatsapp || ''}</div>
                     </div>
                   )
                 })()}

@@ -2,6 +2,8 @@ export interface SiteInfoShape {
   internet?: string
   supplier?: string
   serviceUsername?: string
+  telephone?: string
+  whatsapp?: string
   raw?: string
 }
 
@@ -16,6 +18,8 @@ export function parseSiteInfo(input: any): SiteInfoShape {
           internet: data.internet ?? data['internet'] ?? '',
           supplier: data.supplier ?? data['supplier'] ?? '',
           serviceUsername: data.serviceUsername ?? data['serviceUsername'] ?? '',
+          telephone: data.telephone ?? data['telephone'] ?? '',
+          whatsapp: data.whatsapp ?? data['whatsapp'] ?? '',
           raw: ''
         }
       } else {
@@ -28,9 +32,11 @@ export function parseSiteInfo(input: any): SiteInfoShape {
   // If it's an object, map keys if present
   if (typeof input === 'object') {
     return {
-      internet: input.internet ?? input['internet'] ?? '',
-      supplier: input.supplier ?? input['supplier'] ?? '',
-      serviceUsername: input.serviceUsername ?? input['serviceUsername'] ?? '',
+      internet: (input as any).internet ?? (input as any)['internet'] ?? '',
+      supplier: (input as any).supplier ?? (input as any)['supplier'] ?? '',
+      serviceUsername: (input as any).serviceUsername ?? (input as any)['serviceUsername'] ?? '',
+      telephone: (input as any).telephone ?? (input as any)['telephone'] ?? '',
+      whatsapp: (input as any).whatsapp ?? (input as any)['whatsapp'] ?? '',
       raw: ''
     }
   }
