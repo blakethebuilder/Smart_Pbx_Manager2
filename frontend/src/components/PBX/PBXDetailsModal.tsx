@@ -47,54 +47,7 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit, onSaved }:
   }
   const extensionLabel = pbx.extensionCount != null ? `${pbx.extensionCount} extensions` : 'Extensions unknown'
 
-  // Inline editing state for service details (within modal)
-  const [editMode, setEditMode] = useState(false)
-  const [internetService, setInternetService] = useState<string>('Example Service')
-  const [supplier, setSupplier] = useState<string>('Example network')
-  const [serviceUsername, setServiceUsername] = useState<string>('')
-
-  // Initialize edit fields when modal opens
-  useEffect(() => {
-    if (isOpen && pbx) {
-      setEditMode(false)
-      // Initialize edit fields from siteInfo using robust parser
-      const infoParsed = parseSiteInfo(pbx.siteInfo)
-      setInternetService(infoParsed.internet ?? 'Example Service')
-      setSupplier(infoParsed.supplier ?? 'Example network')
-      setServiceUsername(infoParsed.serviceUsername ?? '')
-    }
-  }, [isOpen, pbx?.id])
-
-  const saveInlineEdits = async () => {
-    if (!pbx) return
-    let existing: any = {}
-    try {
-      existing = pbx.siteInfo ? JSON.parse(pbx.siteInfo as string) : {}
-    } catch {
-      existing = {}
-    }
-    const merged = {
-      ...existing,
-      internet: internetService,
-      supplier,
-      serviceUsername,
-    }
-    try {
-      const updated = await pbxService.updatePBX(pbx.id, {
-        name: pbx.name,
-        url: pbx.url,
-        siteInfo: JSON.stringify(merged),
-      } as any)
-      setEditMode(false)
-      if (onSaved) onSaved(updated)
-      // Ensure the UI reflects changes on next open by reloading the page
-      try { window.location.reload(); } catch {}
-    } catch (err) {
-      console.error('Failed to save inline PBX service details', err)
-    }
-  }
-
-  const cancelEdits = () => setEditMode(false)
+  // Inline editing removed; edits are handled in dedicated edit modal
 
   return (
     <AnimatePresence>
