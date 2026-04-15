@@ -1,8 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink, FileText, Pencil, MapPin, Phone, Tag } from 'lucide-react'
-// Removed unused React import
-// pbxService removed; edits handled via dedicated modal
 import { PBXInstance } from '../../stores/pbxStore'
+import { parseSiteInfo } from '../../utils/siteInfo'
 
 interface PBXDetailsModalProps {
   pbx: PBXInstance | null
@@ -24,26 +23,7 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetai
   if (!pbx) return null
 
   const hostname = formatHostname(pbx.url)
-  // Robust parser for siteInfo: supports string or object. Returns either parsed data or raw text when not JSON.
-  const parseSiteInfo = (siteInfo: any) => {
-    const defaults = { internet: '', supplier: '', serviceUsername: '', raw: '' as string | undefined }
-    if (!siteInfo) return defaults
-    try {
-      const data = typeof siteInfo === 'string' ? JSON.parse(siteInfo) : siteInfo
-      if (data && typeof data === 'object' && (data.internet || data.supplier || data.serviceUsername)) {
-        return {
-          internet: data.internet ?? data['internet'] ?? '',
-          supplier: data.supplier ?? data['supplier'] ?? '',
-          serviceUsername: data.serviceUsername ?? data['serviceUsername'] ?? '',
-          raw: '',
-        }
-      }
-    } catch {
-      // Not JSON, fall through to return raw string below
-    }
-    // If not JSON, store raw string
-    return { internet: '', supplier: '', serviceUsername: '', raw: String(siteInfo) }
-  }
+  // SiteInfo is parsed via shared utility (no local parsing here)
   const extensionLabel = pbx.extensionCount != null ? `${pbx.extensionCount} extensions` : 'Extensions unknown'
 
   // Inline editing removed; edits are handled in dedicated edit modal
