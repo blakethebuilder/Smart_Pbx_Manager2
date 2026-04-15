@@ -64,13 +64,16 @@ const EditPBXModal = ({ isOpen, pbx, onClose, onSaved }: EditPBXModalProps) => {
 
     setIsSaving(true)
     setError('')
+    // Accept any string for SiteInfo (JSON or plain text)
+    const trimmedSiteInfo = siteInfo.trim()
+    // No strict validation; allow any string (JSON or plain text)
     try {
       await pbxService.updatePBX(pbx.id, {
         name: name.trim(),
         url: url.trim().replace(/\/login\/?$/, ''),
         nickname: nickname.trim(),
         extensionCount: normalizedExtension,
-        siteInfo: siteInfo.trim(),
+        siteInfo: trimmedSiteInfo,
         tags: pbx.tags,
       })
       setSuccessMessage('Client details updated successfully.')
@@ -80,6 +83,7 @@ const EditPBXModal = ({ isOpen, pbx, onClose, onSaved }: EditPBXModalProps) => {
     } finally {
       setIsSaving(false)
     }
+    
   }
 
   if (!pbx) return null

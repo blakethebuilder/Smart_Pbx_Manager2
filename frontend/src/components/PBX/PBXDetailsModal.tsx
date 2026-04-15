@@ -1,5 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink, FileText, Pencil, MapPin, Phone, Tag } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { pbxService } from '../../services/pbxService'
 import { PBXInstance } from '../../stores/pbxStore'
 
 interface PBXDetailsModalProps {
@@ -8,6 +10,7 @@ interface PBXDetailsModalProps {
   onClose: () => void
   onViewNotes: (pbx: PBXInstance) => void
   onEdit: (pbx: PBXInstance) => void
+  onSaved?: (updatedPbx: PBXInstance) => void
 }
 
 const formatHostname = (url: string) => {
@@ -18,11 +21,80 @@ const formatHostname = (url: string) => {
   }
 }
 
-const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetailsModalProps) => {
+const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit, onSaved }: PBXDetailsModalProps) => {
   if (!pbx) return null
 
   const hostname = formatHostname(pbx.url)
+  // Robust parser for siteInfo: supports string or object. Returns either parsed data or raw text when not JSON.
+  const parseSiteInfo = (siteInfo: any) => {
+    const defaults = { internet: '', supplier: '', serviceUsername: '', raw: '' as string | undefined }
+    if (!siteInfo) return defaults
+    try {
+      const data = typeof siteInfo === 'string' ? JSON.parse(siteInfo) : siteInfo
+      if (data && typeof data === 'object' && (data.internet || data.supplier || data.serviceUsername)) {
+        return {
+          internet: data.internet ?? data['internet'] ?? '',
+          supplier: data.supplier ?? data['supplier'] ?? '',
+          serviceUsername: data.serviceUsername ?? data['serviceUsername'] ?? '',
+          raw: '',
+        }
+      }
+    } catch {
+      // Not JSON, fall through to return raw string below
+    }
+    // If not JSON, store raw string
+    return { internet: '', supplier: '', serviceUsername: '', raw: String(siteInfo) }
+  }
   const extensionLabel = pbx.extensionCount != null ? `${pbx.extensionCount} extensions` : 'Extensions unknown'
+
+  // Inline editing state for service details (within modal)
+  const [editMode, setEditMode] = useState(false)
+  const [internetService, setInternetService] = useState<string>('Example Service')
+  const [supplier, setSupplier] = useState<string>('Example network')
+  const [serviceUsername, setServiceUsername] = useState<string>('')
+
+  // Initialize edit fields when modal opens
+  useEffect(() => {
+    if (isOpen && pbx) {
+      setEditMode(false)
+      // Initialize edit fields from siteInfo using robust parser
+      const infoParsed = parseSiteInfo(pbx.siteInfo)
+      setInternetService(infoParsed.internet ?? 'Example Service')
+      setSupplier(infoParsed.supplier ?? 'Example network')
+      setServiceUsername(infoParsed.serviceUsername ?? '')
+    }
+  }, [isOpen, pbx?.id])
+
+  const saveInlineEdits = async () => {
+    if (!pbx) return
+    let existing: any = {}
+    try {
+      existing = pbx.siteInfo ? JSON.parse(pbx.siteInfo as string) : {}
+    } catch {
+      existing = {}
+    }
+    const merged = {
+      ...existing,
+      internet: internetService,
+      supplier,
+      serviceUsername,
+    }
+    try {
+      const updated = await pbxService.updatePBX(pbx.id, {
+        name: pbx.name,
+        url: pbx.url,
+        siteInfo: JSON.stringify(merged),
+      } as any)
+      setEditMode(false)
+      if (onSaved) onSaved(updated)
+      // Ensure the UI reflects changes on next open by reloading the page
+      try { window.location.reload(); } catch {}
+    } catch (err) {
+      console.error('Failed to save inline PBX service details', err)
+    }
+  }
+
+  const cancelEdits = () => setEditMode(false)
 
   return (
     <AnimatePresence>
@@ -49,6 +121,7 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetai
             </div>
 
             <div className="p-6 space-y-5">
+              { /* Site Information boxed in the dedicated section below; inline block removed */ }
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl border border-slate-700 bg-dark-900/40 space-y-2">
                   <div className="flex items-center space-x-2 text-slate-300">
@@ -79,9 +152,22 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetai
                   <MapPin className="w-4 h-4 text-primary-400" />
                   <span className="text-xs uppercase tracking-wide text-slate-500">Site Information</span>
                 </div>
-                <p className="text-sm text-slate-200 whitespace-pre-line">
-                  {pbx.siteInfo ? pbx.siteInfo : 'No site information captured yet.'}
-                </p>
+                {(() => {
+                  const info = parseSiteInfo(pbx?.siteInfo)
+                  if (info.raw && info.raw.length) {
+                    return <div className="text-sm text-slate-200">{info.raw}</div>
+                  }
+                  if (!info.internet && !info.supplier && !info.serviceUsername) {
+                    return <div className="text-sm text-slate-200">No site information captured yet.</div>
+                  }
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-sm text-slate-200"><strong>Internet</strong>: {info.internet || '—'}</div>
+                      <div className="text-sm text-slate-200"><strong>Supplier</strong>: {info.supplier || '—'}</div>
+                      <div className="text-sm text-slate-200"><strong>Username</strong>: {info.serviceUsername || ''}</div>
+                    </div>
+                  )
+                })()}
               </div>
 
               <div className="p-4 rounded-xl border border-slate-700 bg-dark-900/40 space-y-2">
@@ -103,21 +189,21 @@ const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetai
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-6 border-t border-slate-700 bg-dark-900/60">
-              <div className="flex items-center space-x-4 text-xs text-slate-500">
-                <div>
-                  <span className="uppercase tracking-wide font-semibold text-slate-400">Created</span>
-                  <div className="text-slate-300 text-sm">{pbx.createdAt ? new Date(pbx.createdAt).toLocaleString() : '—'}</div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-6 border-t border-slate-700 bg-dark-900/60">
+                <div className="flex items-center space-x-4 text-xs text-slate-500">
+                  <div>
+                    <span className="uppercase tracking-wide font-semibold text-slate-400">Created</span>
+                    <div className="text-slate-300 text-sm">{pbx.createdAt ? new Date(pbx.createdAt).toLocaleString() : '—'}</div>
+                  </div>
+                  <div>
+                    <span className="uppercase tracking-wide font-semibold text-slate-400">Updated</span>
+                    <div className="text-slate-300 text-sm">{pbx.updatedAt ? new Date(pbx.updatedAt).toLocaleString() : '—'}</div>
+                  </div>
                 </div>
-                <div>
-                  <span className="uppercase tracking-wide font-semibold text-slate-400">Updated</span>
-                  <div className="text-slate-300 text-sm">{pbx.updatedAt ? new Date(pbx.updatedAt).toLocaleString() : '—'}</div>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-end space-x-3">
+                <div className="flex items-center justify-end space-x-3">
                 <button
-                  onClick={() => onEdit(pbx)}
+                  onClick={() => { console.debug('PBXDetailsModal: Edit clicked for', pbx?.id); onEdit(pbx); }}
                   className="btn-secondary flex items-center space-x-2"
                 >
                   <Pencil className="w-4 h-4" />
