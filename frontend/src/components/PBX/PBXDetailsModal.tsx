@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLink, FileText, Pencil, MapPin, Phone, Tag } from 'lucide-react'
-import React from 'react'
+// Removed unused React import
 // pbxService removed; edits handled via dedicated modal
 import { PBXInstance } from '../../stores/pbxStore'
 
@@ -10,7 +10,6 @@ interface PBXDetailsModalProps {
   onClose: () => void
   onViewNotes: (pbx: PBXInstance) => void
   onEdit: (pbx: PBXInstance) => void
-  onSaved?: (updatedPbx: PBXInstance) => void
 }
 
 const formatHostname = (url: string) => {
@@ -21,7 +20,7 @@ const formatHostname = (url: string) => {
   }
 }
 
-const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit, onSaved }: PBXDetailsModalProps) => {
+const PBXDetailsModal = ({ pbx, isOpen, onClose, onViewNotes, onEdit }: PBXDetailsModalProps) => {
   if (!pbx) return null
 
   const hostname = formatHostname(pbx.url)

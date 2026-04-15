@@ -298,7 +298,6 @@ const Dashboard = () => {
         onClose={handleCloseDetails}
         onViewNotes={handleViewNotes}
         onEdit={handleEditPBX}
-        onSaved={handlePBXUpdated}
       />
     </div>
   )
